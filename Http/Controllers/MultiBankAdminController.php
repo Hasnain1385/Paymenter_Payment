@@ -121,6 +121,56 @@ class MultiBankAdminController extends Controller
     }
 
     /**
+     * Render the unified PakPay Management Hub (Accounts, Verifications, Updates).
+     */
+    public function indexDashboard(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $accounts = MultiBankAccount::orderBy('sort_order', 'asc')->orderBy('id', 'asc')->get();
+        $transactions = MultiBankTransaction::orderBy('created_at', 'desc')->take(50)->get();
+
+        $pendingCount = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_PENDING_VERIFICATION,
+            'pending',
+            'under_review'
+        ])->count();
+
+        $verifiedCount = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_VERIFIED,
+            'approved',
+            'paid'
+        ])->count();
+
+        $verifiedTotal = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_VERIFIED,
+            'approved',
+            'paid'
+        ])->sum('amount');
+
+        $declinedCount = MultiBankTransaction::where('status', MultiBankTransaction::STATUS_DECLINED)->count();
+        $totalTransactions = MultiBankTransaction::count();
+
+        $updateInfo = null;
+        try {
+            $updateInfo = GithubUpdateService::checkForUpdates();
+        } catch (\Throwable $e) {}
+
+        return view('multibankqr::admin.dashboard', [
+            'accounts'          => $accounts,
+            'transactions'      => $transactions,
+            'pendingCount'      => $pendingCount,
+            'verifiedCount'     => $verifiedCount,
+            'verifiedTotal'     => $verifiedTotal,
+            'declinedCount'     => $declinedCount,
+            'totalTransactions' => $totalTransactions,
+            'updateInfo'        => $updateInfo,
+            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.2.8',
+            'tab'               => $request->query('tab', 'accounts'),
+        ]);
+    }
+
+    /**
      * Approve transaction manually and mark the invoice as PAID.
      * Status transition: Pending Verification -> Verified.
      */

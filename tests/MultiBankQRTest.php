@@ -110,6 +110,19 @@ class MultiBankQRTest
         assert($gitStatus['is_git'] === true, "Local clone is detected as Git repository");
         echo "✓ GitHub In-Place Update Service & Local Git Status Detection\n";
 
+        // 8. Decluttered getConfig() Verification
+        require_once __DIR__ . '/../MultiBankQR.php';
+        $gateway = new \Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR();
+        $config = $gateway->getConfig();
+        assert(is_array($config), "getConfig returns array");
+        assert(count($config) === 6, "getConfig is decluttered to exactly 6 essential fields");
+        $fieldNames = array_column($config, 'name');
+        assert(in_array('pakpay_hub_notice', $fieldNames), "getConfig includes dedicated PakPay portal hub notice");
+        assert(!in_array('acc1_name', $fieldNames), "getConfig removes old acc1 clutter field");
+        assert(!in_array('acc4_currency', $fieldNames), "getConfig removes old acc4 clutter field");
+        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.2.8', "Version bumped to 1.2.8");
+        echo "✓ Gateway Setup Decluttered: 6 clean fields, no slot clutter, v1.2.8\n";
+
         echo "\n🎉 All Pakistani & Security tests passed successfully!\n";
     }
 }

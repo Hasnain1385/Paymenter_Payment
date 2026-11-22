@@ -21,6 +21,12 @@ Route::middleware(['web'])->group(function () {
 
     // Admin Verification Endpoints (Protected by Admin Auth inside Controller)
     Route::prefix('admin/multibankqr')->name('multibankqr.admin.')->group(function () {
+        // Dedicated PakPay Management Hub
+        Route::get('/pakpay', [MultiBankAdminController::class, 'indexDashboard'])
+            ->name('pakpay');
+        Route::get('/', [MultiBankAdminController::class, 'indexDashboard'])
+            ->name('dashboard');
+
         // Payment History & Manual Verification Dashboard
         Route::get('/transactions', [MultiBankAdminController::class, 'indexTransactions'])
             ->name('transactions');
@@ -67,4 +73,8 @@ Route::middleware(['web'])->group(function () {
         Route::post('/updates/push', [MultiBankAdminController::class, 'pushUpdates'])
             ->name('updates.push');
     });
+
+    // Direct Admin Sidebar Route for PakPay
+    Route::get('/admin/pakpay', [MultiBankAdminController::class, 'indexDashboard'])
+        ->name('multibankqr.admin.pakpay.direct');
 });

@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png" width="128" height="128" alt="PakBank QR Logo" style="border-radius: 28px;">
+  <img src="https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png" width="128" height="128" alt="PakPay Logo" style="border-radius: 28px;">
 </p>
 
-# PakBank QR & Manual Payment Gateway for Paymenter
+# PakPay - Bank Transfer & QR Gateway for Paymenter
 
-A dedicated payment gateway plugin for **Paymenter** designed for **Pakistani payments** (Raast P2P/P2M, Meezan Bank, Easypaisa, JazzCash, SadaPay, NayaPay, Bank Alfalah, and commercial banks).
+A dedicated, high-performance Pakistani payment gateway plugin for **Paymenter** (Raast P2P/P2M, Meezan Bank, Easypaisa, JazzCash, SadaPay, NayaPay, and commercial banks).
 
-It allows merchants to display **scanned static QR codes** of their accounts, provides **pre-payment & post-payment WhatsApp contact buttons**, links to **Discord**, transitions invoices through a transparent **Pending Payment ➜ Pending Verification ➜ Verified** lifecycle, and includes enterprise security hardening against SQL Injection, XSS, and arbitrary file execution.
+It enables merchants to accept payments with **scanned static QR codes**, provides **WhatsApp & Discord direct support buttons**, transitions invoices through a transparent **Pending Payment ➜ Pending Verification ➜ Verified** lifecycle, and features a **dedicated PakPay management page directly in the Paymenter admin sidebar** with in-place GitHub updating.
 
 ---
 
@@ -99,28 +99,29 @@ composer dump-autoload -o
 
 ### ⚙️ Admin Configuration & Access
 
-You can manage bank accounts and verify customer payments through **three convenient methods**:
+You can manage bank accounts, verify customer payments, and update the extension through **three convenient access methods**:
 
-#### Method 1: Native Paymenter Admin Sidebar Navigation
-When the extension is enabled, Paymenter automatically registers and displays two dedicated management resources directly in the admin sidebar menu under the **Payments** navigation group:
-* **🏦 Bank Accounts & QRs**: Add new accounts via modal popup, edit details, upload static QR images, toggle active status, and reorder.
-* **💳 Manual Bank Proofs**: View submitted proofs, inspect uploaded receipt images, and 1-click Approve or Decline transactions.
+#### Method 1: Dedicated PakPay Sidebar Page (Payments ➜ PakPay)
+When the extension is loaded, a dedicated **PakPay** page appears in the Paymenter admin sidebar menu under the **Payments** navigation group:
+* **🏦 Bank Accounts**: Prominent **"➕ Add Bank Account"** button to add new accounts via modal popup, and an instant **"🗑️ Delete"** button on each added account.
+* **💳 Payment Verifications**: 1-click **Approve** (marks invoice as Paid) and **Decline**, plus receipt screenshot viewer.
+* **🔄 In-Place GitHub Updater**: Check remote repository (`https://github.com/Hasnain1385/Paymenter_Payment`) and update in-place with 1 click.
 
-#### Method 2: Gateway Configuration Form (In-Place Settings)
-1. Navigate to **Extensions ➜ Gateways ➜ PakBank QR & Manual Verification ➜ Edit**.
-2. Configure your bank accounts directly on the page:
-   * **Account 1 (Primary / Raast)**: Bank name, account number/IBAN, title, static QR URL, instructions.
-   * **Account 2 (Easypaisa Wallet)**: Name, mobile number, title, static QR URL.
-   * **Account 3 (JazzCash Wallet)**: Name, mobile number, title, static QR URL.
-   * **Account 4 (Digital Bank / Custom)**: Name, number, title, static QR URL.
-3. Configure your Support **WhatsApp number**, **Discord invite link**, and **Payment notice**.
-4. Click **Save Settings**. (Settings automatically synchronize with the database on save).
+#### Method 2: Clean Gateway Configuration Form
+1. Navigate to **Extensions ➜ Gateways ➜ PakPay ➜ Edit**.
+2. Clean, clutter-free setup with only 5 essential fields:
+   * Direct link banner to the dedicated **PakPay Management Hub**
+   * Gateway Display Title
+   * Support WhatsApp Number
+   * Discord Server Invite Link
+   * Custom Payment Notice & Screenshot Receipt Requirement
+3. All bank account CRUD operations are conveniently handled in the dedicated PakPay page.
 
-#### Method 3: Dedicated Fullscreen Dashboards
-Direct browser links with dark-mode optimized interfaces:
+#### Method 3: Direct Admin URLs
+* **Unified PakPay Hub**: `/admin/multibankqr/pakpay` (or `/admin/pakpay`)
 * **Bank Accounts Manager**: `/admin/multibankqr/accounts`
-* **Payment History & Verification**: `/admin/multibankqr/transactions`
-* **GitHub In-Place Updates & Sync**: `/admin/multibankqr/updates`
+* **Payment Verifications**: `/admin/multibankqr/transactions`
+* **GitHub In-Place Updates**: `/admin/multibankqr/updates`
 
 ---
 

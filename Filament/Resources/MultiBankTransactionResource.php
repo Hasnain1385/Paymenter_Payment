@@ -22,6 +22,8 @@ class MultiBankTransactionResource extends Resource
 {
     protected static ?string $model = MultiBankTransaction::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationGroup = 'Payments';
