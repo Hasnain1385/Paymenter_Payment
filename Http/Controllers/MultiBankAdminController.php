@@ -115,6 +115,84 @@ class MultiBankAdminController extends Controller
     }
 
     // =========================================================================
+    // Payment History & Manual Verification Dashboard
+    // =========================================================================
+
+    /**
+     * Render the Payment History & Manual Verification admin dashboard.
+     */
+    public function indexTransactions(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $query = MultiBankTransaction::query()->orderBy('created_at', 'desc');
+
+        // Status Filter
+        $status = $request->query('status');
+        if ($status === 'pending') {
+            $query->whereIn('status', [
+                MultiBankTransaction::STATUS_PENDING_VERIFICATION,
+                'pending',
+                'under_review'
+            ]);
+        } elseif ($status === 'verified') {
+            $query->whereIn('status', [
+                MultiBankTransaction::STATUS_VERIFIED,
+                'approved',
+                'paid'
+            ]);
+        } elseif ($status === 'declined') {
+            $query->where('status', MultiBankTransaction::STATUS_DECLINED);
+        }
+
+        // Search Filter
+        $search = $request->query('search');
+        if (!empty($search)) {
+            $sanitizedSearch = htmlspecialchars(strip_tags(trim($search)), ENT_QUOTES, 'UTF-8');
+            $query->where(function ($q) use ($sanitizedSearch) {
+                $q->where('invoice_id', 'like', "%{$sanitizedSearch}%")
+                  ->orWhere('transaction_id', 'like', "%{$sanitizedSearch}%")
+                  ->orWhere('sender_name', 'like', "%{$sanitizedSearch}%")
+                  ->orWhere('bank_account_name', 'like', "%{$sanitizedSearch}%");
+            });
+        }
+
+        $transactions = $query->paginate(25)->appends($request->query());
+
+        // Overview Metric Counts
+        $pendingCount = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_PENDING_VERIFICATION,
+            'pending',
+            'under_review'
+        ])->count();
+
+        $verifiedCount = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_VERIFIED,
+            'approved',
+            'paid'
+        ])->count();
+
+        $verifiedTotal = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_VERIFIED,
+            'approved',
+            'paid'
+        ])->sum('amount');
+
+        $totalCount = MultiBankTransaction::count();
+
+        return view('multibankqr::admin.transactions', [
+            'transactions'  => $transactions,
+            'pendingCount'  => $pendingCount,
+            'verifiedCount' => $verifiedCount,
+            'verifiedTotal' => $verifiedTotal,
+            'totalCount'    => $totalCount,
+            'currentStatus' => $status ?: 'all',
+            'search'        => $search ?: '',
+            'version'       => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.2.2',
+        ]);
+    }
+
+    // =========================================================================
     // Dynamic Bank Accounts Management (Add, Edit, Remove, Toggle, Reorder)
     // =========================================================================
 

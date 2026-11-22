@@ -26,14 +26,14 @@ if (!class_exists('App\Attributes\ExtensionMeta')) {
 #[ExtensionMeta(
     name: 'PakBank QR & Manual Verification',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, HBL, Bank Alfalah, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord direct contact buttons, and manual admin verification workflow.',
-    version: '1.2.0',
+    version: '1.2.3',
     author: 'Mirza Hasnain Baig',
     url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/qrcode.svg'
 )]
 class MultiBankQR extends Gateway
 {
-    public const VERSION = '1.2.0';
+    public const VERSION = '1.2.3';
     /**
      * Boot the extension: register routes, views, and auto-migrate tables if needed.
      */
@@ -78,7 +78,17 @@ class MultiBankQR extends Gateway
     public function getConfig($values = [])
     {
         return [
-            // 1. Dynamic Bank Accounts Management
+            // 1. Payment History & 1-Click Verification Dashboard
+            [
+                'name' => 'admin_transactions_action',
+                'label' => 'Payment History & Verification Dashboard',
+                'type' => 'text',
+                'default' => '/admin/multibankqr/transactions',
+                'description' => '👉 Open /admin/multibankqr/transactions to track customer submissions, inspect receipt screenshots, and 1-click Approve or Decline orders.',
+                'required' => false,
+            ],
+
+            // 2. Dynamic Bank Accounts Management
             [
                 'name' => 'admin_accounts_action',
                 'label' => 'Bank Accounts Manager (Add / Edit / Remove Accounts)',
@@ -88,7 +98,7 @@ class MultiBankQR extends Gateway
                 'required' => false,
             ],
 
-            // 2. In-Place GitHub Updater
+            // 3. In-Place GitHub Updater
             [
                 'name' => 'admin_updates_action',
                 'label' => 'GitHub In-Place Updates (Hasnain1385/Paymenter_Payment)',

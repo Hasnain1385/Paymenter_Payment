@@ -106,6 +106,15 @@ composer dump-autoload -o
 
 ---
 
+### 💳 Payment History & 1-Click Verification Dashboard
+Navigate to: **`/admin/multibankqr/transactions`**
+* **Real-time Overview Metrics**: View Pending Approval count (with live animation), Total Verified Revenue, and Completed Orders.
+* **Filter & Search**: Quickly filter by `Pending Verification`, `Verified`, or `Declined` status, and search by Invoice #, TRX/UTR ID, Customer Name, or Bank Name.
+* **Inspect Proof Receipts**: 1-click preview lightbox for uploaded payment screenshots and receipts.
+* **1-Click Approve / Decline**: Instantly mark transactions as approved, which updates the invoice status to PAID and alerts the customer via live status polling, or decline invalid submissions with an optional reason.
+
+---
+
 ### 🏦 Dynamic Bank Accounts Manager (Add / Edit / Remove Accounts)
 Navigate to: **`/admin/multibankqr/accounts`**
 * **Add Unlimited Accounts**: Add Pakistani bank accounts (Meezan, HBL, Alfalah, Standard Chartered), Raast IDs, or mobile wallets (Easypaisa, JazzCash, SadaPay, NayaPay).

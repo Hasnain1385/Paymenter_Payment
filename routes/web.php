@@ -21,6 +21,10 @@ Route::middleware(['web'])->group(function () {
 
     // Admin Verification Endpoints (Protected by Admin Auth inside Controller)
     Route::prefix('admin/multibankqr')->name('multibankqr.admin.')->group(function () {
+        // Payment History & Manual Verification Dashboard
+        Route::get('/transactions', [MultiBankAdminController::class, 'indexTransactions'])
+            ->name('transactions');
+
         // Manual Verification Actions
         Route::post('/transactions/{id}/approve', [MultiBankAdminController::class, 'approve'])
             ->name('approve');
