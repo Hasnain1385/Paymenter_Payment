@@ -22,17 +22,17 @@ class MultiBankTransactionResource extends Resource
 {
     protected static ?string $model = MultiBankTransaction::class;
 
-    protected static bool $shouldRegisterNavigation = false;
+    protected static bool $shouldRegisterNavigation = true;
 
-    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
+    protected static ?string $navigationIcon = 'heroicon-o-check-badge';
 
     protected static ?string $navigationGroup = 'Payments';
 
-    protected static ?string $navigationLabel = 'Manual Bank Proofs';
+    protected static ?string $navigationLabel = 'PakPay Verifications';
 
-    protected static ?string $modelLabel = 'Bank Proof Transaction';
+    protected static ?string $modelLabel = 'Payment Proof';
 
-    protected static ?int $navigationSort = 15;
+    protected static ?int $navigationSort = 16;
 
     public static function getNavigationBadge(): ?string
     {

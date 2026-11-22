@@ -38,24 +38,37 @@ class MultiBankQRServiceProvider extends ServiceProvider
         // Register Filament pages, resources & sidebar navigation if Filament is available
         if (class_exists(\Filament\Facades\Filament::class)) {
             try {
-                // Filament v3 Event hook to register dedicated 'PakPay' sidebar item under Payments
-                if (class_exists(\Filament\Events\ServingFilament::class) && class_exists(\Filament\Navigation\NavigationItem::class)) {
+                // Filament v3 Event hook to register resources and pages when panel is served
+                if (class_exists(\Filament\Events\ServingFilament::class)) {
                     \Illuminate\Support\Facades\Event::listen(\Filament\Events\ServingFilament::class, function () {
                         try {
-                            \Filament\Facades\Filament::registerNavigationItems([
-                                \Filament\Navigation\NavigationItem::make('PakPay')
-                                    ->url('/admin/multibankqr/pakpay')
-                                    ->icon('heroicon-o-credit-card')
-                                    ->group('Payments')
-                                    ->sort(1),
-                            ]);
+                            $panel = \Filament\Facades\Filament::getCurrentPanel();
+                            if ($panel) {
+                                if (method_exists($panel, 'resources')) {
+                                    $panel->resources([
+                                        \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class,
+                                        \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class,
+                                    ]);
+                                }
+                                if (method_exists($panel, 'pages')) {
+                                    $panel->pages([
+                                        \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class,
+                                    ]);
+                                }
+                            }
                         } catch (\Throwable $e) {}
                     });
                 }
 
-                // Panel-level page registration for Filament v3
+                // Panel-level resource and page registration for Filament v3
                 if (method_exists(\Filament\Facades\Filament::class, 'getPanels')) {
                     foreach (\Filament\Facades\Filament::getPanels() as $panel) {
+                        if (method_exists($panel, 'resources')) {
+                            $panel->resources([
+                                \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class,
+                                \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class,
+                            ]);
+                        }
                         if (method_exists($panel, 'pages')) {
                             $panel->pages([
                                 \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class,

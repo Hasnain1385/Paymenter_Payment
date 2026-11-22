@@ -115,13 +115,13 @@ class MultiBankQRTest
         $gateway = new \Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR();
         $config = $gateway->getConfig();
         assert(is_array($config), "getConfig returns array");
-        assert(count($config) === 6, "getConfig is decluttered to exactly 6 essential fields");
+        assert(count($config) === 5, "getConfig is decluttered to exactly 5 essential fields with zero raw HTML placeholders");
         $fieldNames = array_column($config, 'name');
-        assert(in_array('pakpay_hub_notice', $fieldNames), "getConfig includes dedicated PakPay portal hub notice");
+        assert(!in_array('pakpay_hub_notice', $fieldNames), "getConfig removes raw HTML pakpay_hub_notice placeholder");
         assert(!in_array('acc1_name', $fieldNames), "getConfig removes old acc1 clutter field");
         assert(!in_array('acc4_currency', $fieldNames), "getConfig removes old acc4 clutter field");
-        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.2.9', "Version bumped to 1.2.9");
-        echo "✓ Gateway Setup Decluttered: 6 clean fields, no slot clutter, v1.2.9\n";
+        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.3.0', "Version bumped to 1.3.0");
+        echo "✓ Gateway Setup Decluttered: 5 clean fields, zero raw HTML placeholders, v1.3.0\n";
 
         echo "\n🎉 All Pakistani & Security tests passed successfully!\n";
     }

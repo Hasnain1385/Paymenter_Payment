@@ -101,21 +101,27 @@ composer dump-autoload -o
 
 You can manage bank accounts, verify customer payments, and update the extension through **three convenient access methods**:
 
-#### Method 1: Dedicated PakPay Sidebar Page (Payments ➜ PakPay)
-When the extension is loaded, a dedicated **PakPay** page appears in the Paymenter admin sidebar menu under the **Payments** navigation group:
-* **🏦 Bank Accounts**: Prominent **"➕ Add Bank Account"** button to add new accounts via modal popup, and an instant **"🗑️ Delete"** button on each added account.
-* **💳 Payment Verifications**: 1-click **Approve** (marks invoice as Paid) and **Decline**, plus receipt screenshot viewer.
-* **🔄 In-Place GitHub Updater**: Check remote repository (`https://github.com/Hasnain1385/Paymenter_Payment`) and update in-place with 1 click.
+#### Method 1: Native Paymenter Sidebar Resources (Under "Payments" Group)
+When the extension is loaded, two native resources appear directly in the Paymenter admin sidebar under the **Payments** navigation group:
+* **🏦 PakPay Accounts & QRs**:
+  * **"➕ Add Bank Account"** button in the header opens a modal to create new accounts with scanned static QR images.
+  * **"🗑️ Delete"** button on each row in the table to instantly remove accounts.
+  * **"✏️ Edit"** button and active/inactive toggle.
+  * **"⚡ PakPay Full Hub & Updates"** header button linking directly to the full dashboard and GitHub updater.
+* **💳 PakPay Verifications**:
+  * Real-time pending count badge (`warning` color).
+  * 1-click **Approve** (marks invoice as Paid and activates customer service).
+  * 1-click **Decline** (marks as declined with optional reason).
+  * **View Proof** modal to inspect customer receipt screenshots.
 
 #### Method 2: Clean Gateway Configuration Form
-1. Navigate to **Extensions ➜ Gateways ➜ PakPay ➜ Edit**.
-2. Clean, clutter-free setup with only 5 essential fields:
-   * Direct link banner to the dedicated **PakPay Management Hub**
-   * Gateway Display Title
-   * Support WhatsApp Number
-   * Discord Server Invite Link
-   * Custom Payment Notice & Screenshot Receipt Requirement
-3. All bank account CRUD operations are conveniently handled in the dedicated PakPay page.
+Navigate to **Extensions ➜ Gateways ➜ PakPay ➜ Edit**:
+* Clean, 100% clutter-free setup with exactly 5 essential fields (zero raw HTML, zero slot clutter):
+  1. Gateway Display Name
+  2. Support WhatsApp Number
+  3. Discord Server Invite Link
+  4. Checkout Payment Notice
+  5. Require Screenshot Receipt Upload Checkbox
 
 #### Method 3: Direct Admin URLs
 * **Unified PakPay Hub**: `/admin/multibankqr/pakpay` (or `/extensions/multibankqr/admin/pakpay`)

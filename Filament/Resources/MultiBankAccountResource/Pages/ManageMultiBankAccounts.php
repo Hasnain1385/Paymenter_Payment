@@ -20,6 +20,11 @@ class ManageMultiBankAccounts extends ManageRecords
             Actions\CreateAction::make()
                 ->label('➕ Add Bank Account')
                 ->modalHeading('Add New Merchant Bank / Wallet Account'),
+            Actions\Action::make('pakpayHub')
+                ->label('⚡ PakPay Full Hub & Updates')
+                ->url('/extensions/multibankqr/admin/pakpay')
+                ->openUrlInNewTab()
+                ->color('success'),
         ];
     }
 }

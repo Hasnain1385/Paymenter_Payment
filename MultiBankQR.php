@@ -26,14 +26,14 @@ if (!class_exists('App\Attributes\ExtensionMeta')) {
 #[ExtensionMeta(
     name: 'PakPay - Bank Transfer & QR Gateway',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord support buttons, and instant admin verification.',
-    version: '1.2.9',
+    version: '1.3.0',
     author: 'Mirza Hasnain Baig',
     url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png'
 )]
 class MultiBankQR extends Gateway
 {
-    public const VERSION = '1.2.9';
+    public const VERSION = '1.3.0';
 
     /**
      * Instantiate the gateway and ensure routes and services are immediately booted.
@@ -100,20 +100,6 @@ class MultiBankQR extends Gateway
     public function getConfig($values = [])
     {
         return [
-            [
-                'name' => 'pakpay_hub_notice',
-                'label' => '⚡ PakPay Sidebar & Management Hub',
-                'type' => 'placeholder',
-                'description' => '<div style="padding:14px;background:#064e3b;border:1px solid #059669;border-radius:8px;color:#ecfdf5;font-size:13px;line-height:1.6;">' .
-                    '<strong style="font-size:14px;display:block;margin-bottom:4px;">🚀 Dedicated PakPay Hub Available</strong>' .
-                    'Manage bank accounts (add / remove), verify incoming customer payments, and sync GitHub updates directly:' .
-                    '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">' .
-                    '<a href="/admin/multibankqr/pakpay" target="_blank" style="display:inline-block;padding:8px 16px;background:#10b981;color:#ffffff;font-weight:700;border-radius:6px;text-decoration:none;">Open PakPay Hub &rarr;</a>' .
-                    '<a href="/admin/multibankqr/accounts" target="_blank" style="display:inline-block;padding:8px 14px;background:#047857;color:#ffffff;font-weight:600;border-radius:6px;text-decoration:none;">Bank Accounts Manager &rarr;</a>' .
-                    '<a href="/extensions/multibankqr/admin/pakpay" target="_blank" style="display:inline-block;padding:8px 14px;background:#059669;color:#ffffff;font-weight:600;border-radius:6px;text-decoration:none;">Direct Link (Bypass) &rarr;</a>' .
-                    '</div>' .
-                    '</div>',
-            ],
             [
                 'name' => 'gateway_title',
                 'label' => 'Gateway Display Name',

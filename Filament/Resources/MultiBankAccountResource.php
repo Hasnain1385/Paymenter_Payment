@@ -18,17 +18,17 @@ class MultiBankAccountResource extends Resource
 {
     protected static ?string $model = MultiBankAccount::class;
 
-    protected static bool $shouldRegisterNavigation = false;
+    protected static bool $shouldRegisterNavigation = true;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
 
     protected static ?string $navigationGroup = 'Payments';
 
-    protected static ?string $navigationLabel = 'Bank Accounts & QRs';
+    protected static ?string $navigationLabel = 'PakPay Accounts & QRs';
 
     protected static ?string $modelLabel = 'Bank Account';
 
-    protected static ?int $navigationSort = 16;
+    protected static ?int $navigationSort = 15;
 
     public static function form(Form $form): Form
     {
