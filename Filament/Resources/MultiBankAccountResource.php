@@ -18,11 +18,11 @@ class MultiBankAccountResource extends Resource
 {
     protected static ?string $model = MultiBankAccount::class;
 
-    protected static bool $shouldRegisterNavigation = false;
+    protected static bool $shouldRegisterNavigation = true;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return false;
+        return true;
     }
 
     public static function getUrl(string $name = 'index', array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
@@ -47,7 +47,7 @@ class MultiBankAccountResource extends Resource
 
     protected static ?string $modelLabel = 'Bank Account';
 
-    protected static ?int $navigationSort = 15;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

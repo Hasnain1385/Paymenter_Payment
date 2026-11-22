@@ -14,11 +14,11 @@ if (!class_exists(\Filament\Pages\Page::class)) {
 
 class PakPay extends Page
 {
-    protected static bool $shouldRegisterNavigation = false;
+    protected static bool $shouldRegisterNavigation = true;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return false;
+        return true;
     }
 
     public static function getUrl(array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
@@ -88,7 +88,7 @@ class PakPay extends Page
             'declinedCount'     => $declinedCount,
             'totalTransactions' => $totalTransactions,
             'updateInfo'        => $updateInfo,
-            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.5',
+            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.6',
             'tab'               => request()->query('tab', 'accounts'),
         ];
     }

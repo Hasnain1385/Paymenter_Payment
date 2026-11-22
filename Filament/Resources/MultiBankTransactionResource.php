@@ -22,11 +22,11 @@ class MultiBankTransactionResource extends Resource
 {
     protected static ?string $model = MultiBankTransaction::class;
 
-    protected static bool $shouldRegisterNavigation = false;
+    protected static bool $shouldRegisterNavigation = true;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return false;
+        return true;
     }
 
     public static function getUrl(string $name = 'index', array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
@@ -51,7 +51,7 @@ class MultiBankTransactionResource extends Resource
 
     protected static ?string $modelLabel = 'Payment Proof';
 
-    protected static ?int $navigationSort = 16;
+    protected static ?int $navigationSort = 3;
 
     public static function getNavigationBadge(): ?string
     {

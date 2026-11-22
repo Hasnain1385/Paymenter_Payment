@@ -84,9 +84,11 @@ Route::middleware(['web'])->group(function () {
             ->name('updates.push');
     });
 
-    // Direct Admin Sidebar Route for PakPay
-    Route::get('/admin/pakpay', [MultiBankAdminController::class, 'indexDashboard'])
-        ->name('multibankqr.admin.pakpay.direct');
+    // Direct Admin Sidebar Route for PakPay (fallback if Filament is not loaded)
+    if (!class_exists(\Filament\Facades\Filament::class)) {
+        Route::get('/admin/pakpay', [MultiBankAdminController::class, 'indexDashboard'])
+            ->name('multibankqr.admin.pakpay.direct');
+    }
 
     // Extension Admin Route Group (Bypasses any Filament /admin panel route interception)
     Route::prefix('extensions/multibankqr/admin')->group(function () {
