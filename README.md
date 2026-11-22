@@ -94,16 +94,33 @@ composer dump-autoload -o
 ---
 
 ### ⚙️ Admin Configuration
+
+#### 1. General Gateway Settings
 1. Log into your **Paymenter Admin Panel**.
 2. Go to **Extensions ➜ Gateways** ➜ find **PakBank QR & Manual Verification** ➜ click **Enable**.
 3. Fill in your details:
    * **WhatsApp Number**: e.g. `+923001234567` (include country code for direct WhatsApp click-to-chat).
    * **Discord Invite**: e.g. `https://discord.gg/yourserver`
-   * **Bank Account 1 (Meezan / Raast)**: Account Title, IBAN / Raast ID, and image URL/path to your scanned static Raast QR code.
-   * **Bank Account 2 (Easypaisa)**: Account Title, Mobile Number, and scanned Easypaisa QR screenshot image.
-   * **Bank Account 3 (JazzCash)**: Account Title, Mobile Number, and scanned JazzCash QR screenshot image.
-   * **Bank Account 4 (SadaPay / Bank Alfalah)**: Account Title, Number/IBAN, and scanned QR.
+   * **Custom Notice**: Verification instructions for customers.
 4. Click **Save Settings**.
+
+---
+
+### 🏦 Dynamic Bank Accounts Manager (Add / Edit / Remove Accounts)
+Navigate to: **`/admin/multibankqr/accounts`**
+* **Add Unlimited Accounts**: Add Pakistani bank accounts (Meezan, HBL, Alfalah, Standard Chartered), Raast IDs, or mobile wallets (Easypaisa, JazzCash, SadaPay, NayaPay).
+* **Attach Scanned Static QR Codes**: Upload mobile banking QR code screenshots or enter direct URLs.
+* **On/Off Toggles**: Instantly enable or disable any bank account without removing it.
+* **Delete / Remove Accounts**: 1-click removal of outdated accounts with instant confirmation.
+* **Import from Gateway Settings**: 1-click button to automatically import legacy `acc1..acc4` slots into the database.
+
+---
+
+### 🔄 In-Place GitHub Updates & Push Sync
+Navigate to: **`/admin/multibankqr/updates`**
+* **Check for Updates**: Queries GitHub (`Hasnain1385/Paymenter_Payment`) to compare your installed version against the latest releases, tags, and commits.
+* **⚡ Update In-Place**: 1-click updates the extension directly on your server without needing to re-upload ZIP archives. If installed via Git, it automatically runs `git pull`; if installed via ZIP, it safely updates the codebase in-place while preserving customer uploads.
+* **🚀 Push to GitHub In-Place**: When making modifications on a server or development clone, commit and push your changes directly back to GitHub from the admin UI with a custom commit message.
 
 ---
 

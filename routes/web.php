@@ -21,6 +21,7 @@ Route::middleware(['web'])->group(function () {
 
     // Admin Verification Endpoints (Protected by Admin Auth inside Controller)
     Route::prefix('admin/multibankqr')->name('multibankqr.admin.')->group(function () {
+        // Manual Verification Actions
         Route::post('/transactions/{id}/approve', [MultiBankAdminController::class, 'approve'])
             ->name('approve');
 
@@ -29,5 +30,37 @@ Route::middleware(['web'])->group(function () {
 
         Route::post('/transactions/{id}/flag', [MultiBankAdminController::class, 'flag'])
             ->name('flag');
+
+        // Dynamic Bank Accounts Management (Add, Edit, Remove, Toggle, Import)
+        Route::get('/accounts', [MultiBankAdminController::class, 'indexAccounts'])
+            ->name('accounts');
+
+        Route::post('/accounts', [MultiBankAdminController::class, 'storeAccount'])
+            ->name('accounts.store');
+
+        Route::post('/accounts/{id}/update', [MultiBankAdminController::class, 'updateAccount'])
+            ->name('accounts.update');
+
+        Route::post('/accounts/{id}/delete', [MultiBankAdminController::class, 'deleteAccount'])
+            ->name('accounts.delete');
+
+        Route::post('/accounts/{id}/toggle', [MultiBankAdminController::class, 'toggleAccount'])
+            ->name('accounts.toggle');
+
+        Route::post('/accounts/import-config', [MultiBankAdminController::class, 'importFromConfig'])
+            ->name('accounts.import');
+
+        // In-Place GitHub Updates (Check, Apply In-Place, Push In-Place)
+        Route::get('/updates', [MultiBankAdminController::class, 'indexUpdates'])
+            ->name('updates');
+
+        Route::post('/updates/check', [MultiBankAdminController::class, 'checkUpdates'])
+            ->name('updates.check');
+
+        Route::post('/updates/apply', [MultiBankAdminController::class, 'applyUpdate'])
+            ->name('updates.apply');
+
+        Route::post('/updates/push', [MultiBankAdminController::class, 'pushUpdates'])
+            ->name('updates.push');
     });
 });

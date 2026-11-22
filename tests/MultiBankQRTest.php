@@ -15,7 +15,9 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Paymenter\Extensions\Gateways\MultiBankQR\Services\QrCodeService;
 use Paymenter\Extensions\Gateways\MultiBankQR\Services\BankAccountService;
+use Paymenter\Extensions\Gateways\MultiBankQR\Services\GithubUpdateService;
 use Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankTransaction;
+use Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankAccount;
 
 class MultiBankQRTest
 {
@@ -88,6 +90,25 @@ class MultiBankQRTest
         $cleanTrx = htmlspecialchars(strip_tags(trim($dirtyTrx)), ENT_QUOTES, 'UTF-8');
         assert($cleanTrx === "TRX99887766", "XSS script tags stripped safely");
         echo "✓ Security: Input Sanitization against XSS attacks\n";
+
+        // 6. Dynamic Bank Account Model & Currency Matching
+        $acc = new MultiBankAccount();
+        $acc->name = "JazzCash Merchant";
+        $acc->account_number = "03009988776";
+        $acc->currency = "PKR";
+        $acc->is_active = true;
+        assert($acc->matchesCurrency("PKR") === true, "Account matches PKR currency");
+        assert($acc->matchesCurrency("USD") === false, "Account rejects USD currency");
+        $acc->currency = "ALL";
+        assert($acc->matchesCurrency("USD") === true, "Universal ALL account matches USD");
+        echo "✓ Dynamic Bank Account Model & Currency Matching\n";
+
+        // 7. GitHub In-Place Update Service & Git Status
+        $gitStatus = GithubUpdateService::getGitStatus();
+        assert(is_array($gitStatus), "Git status returns array");
+        assert(isset($gitStatus['is_git']), "is_git property exists");
+        assert($gitStatus['is_git'] === true, "Local clone is detected as Git repository");
+        echo "✓ GitHub In-Place Update Service & Local Git Status Detection\n";
 
         echo "\n🎉 All Pakistani & Security tests passed successfully!\n";
     }

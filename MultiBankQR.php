@@ -11,21 +11,29 @@ use Illuminate\Support\Facades\Log;
 use Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankTransaction;
 use Paymenter\Extensions\Gateways\MultiBankQR\Services\BankAccountService;
 
-// Backward-compatibility alias for older Paymenter versions
-if (!class_exists('App\Classes\Extension\Gateway') && class_exists('App\Classes\Extensions\Gateway')) {
-    class_alias('App\Classes\Extensions\Gateway', 'App\Classes\Extension\Gateway');
+// Backward-compatibility alias for older Paymenter versions or standalone test mock
+if (!class_exists('App\Classes\Extension\Gateway')) {
+    if (class_exists('App\Classes\Extensions\Gateway')) {
+        class_alias('App\Classes\Extensions\Gateway', 'App\Classes\Extension\Gateway');
+    } else {
+        eval('namespace App\Classes\Extension { class Gateway {} }');
+    }
+}
+if (!class_exists('App\Attributes\ExtensionMeta')) {
+    eval('namespace App\Attributes { #[\Attribute] class ExtensionMeta { public function __construct(...$args) {} } }');
 }
 
 #[ExtensionMeta(
     name: 'PakBank QR & Manual Verification',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, HBL, Bank Alfalah, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord direct contact buttons, and manual admin verification workflow.',
-    version: '1.1.0',
+    version: '1.2.0',
     author: 'Mirza Hasnain Baig',
     url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/qrcode.svg'
 )]
 class MultiBankQR extends Gateway
 {
+    public const VERSION = '1.2.0';
     /**
      * Boot the extension: register routes, views, and auto-migrate tables if needed.
      */
@@ -47,7 +55,7 @@ class MultiBankQR extends Gateway
         }
 
         // Auto-migrate tables if not yet created
-        $this->ensureTablesExist();
+        self::ensureTablesExist();
     }
 
     /**
@@ -70,6 +78,24 @@ class MultiBankQR extends Gateway
     public function getConfig($values = [])
     {
         return [
+            // --- Dedicated Management & In-Place GitHub Updater Links ---
+            [
+                'name' => 'admin_accounts_link',
+                'label' => '⚡ Bank Accounts Manager (Add / Remove / Edit Accounts)',
+                'type' => 'text',
+                'default' => '/admin/multibankqr/accounts',
+                'description' => '👉 Open /admin/multibankqr/accounts to add, edit, or remove an unlimited number of Pakistani bank accounts & wallets (Meezan, Easypaisa, JazzCash, SadaPay) with static QR images and instant active/disabled toggles.',
+                'required' => false,
+            ],
+            [
+                'name' => 'admin_updates_link',
+                'label' => '🚀 GitHub In-Place Updates & Git Sync',
+                'type' => 'text',
+                'default' => '/admin/multibankqr/updates',
+                'description' => '👉 Open /admin/multibankqr/updates to check GitHub for releases, pull and apply in-place updates, or commit and push changes back to GitHub.',
+                'required' => false,
+            ],
+
             // --- Contact & Deal Closing (WhatsApp & Discord) ---
             [
                 'name' => 'whatsapp_number',
@@ -567,7 +593,7 @@ class MultiBankQR extends Gateway
     /**
      * Auto-run migrations if tables do not exist yet.
      */
-    protected function ensureTablesExist(): void
+    public static function ensureTablesExist(): void
     {
         try {
             if (!Schema::hasTable('multibank_accounts') || !Schema::hasTable('multibank_transactions')) {
