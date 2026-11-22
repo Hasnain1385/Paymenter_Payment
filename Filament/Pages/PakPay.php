@@ -21,17 +21,73 @@ class PakPay extends Page
         return true;
     }
 
+    public static function canAccess(): bool
+    {
+        return true;
+    }
+
+    public static function canView(): bool
+    {
+        return true;
+    }
+
+    public static function can(string $action, ?\Illuminate\Database\Eloquent\Model $record = null): bool
+    {
+        return true;
+    }
+
+    public static function shouldSkipAuthorization(): bool
+    {
+        return true;
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Payments';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return 'PakPay';
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return 1;
+    }
+
+    public static function getNavigationIcon(): ?string
+    {
+        return 'heroicon-o-credit-card';
+    }
+
+    public static function getNavigationUrl(): string
+    {
+        return url('/admin/multibankqr/pakpay');
+    }
+
+    public static function getNavigationItems(): array
+    {
+        if (!static::shouldRegisterNavigation()) {
+            return [];
+        }
+
+        if (class_exists(\Filament\Navigation\NavigationItem::class)) {
+            return [
+                \Filament\Navigation\NavigationItem::make(static::getNavigationLabel())
+                    ->group(static::getNavigationGroup())
+                    ->icon(static::getNavigationIcon())
+                    ->sort(static::getNavigationSort())
+                    ->url(static::getNavigationUrl())
+                    ->isActiveWhen(fn (): bool => request()->is('admin/multibankqr/pakpay*') || request()->is('extensions/multibankqr/admin/pakpay*') || request()->is('admin/pakpay*')),
+            ];
+        }
+
+        return [];
+    }
+
     public static function getUrl(array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
     {
-        try {
-            $panelObj = $panel ? \Filament\Facades\Filament::getPanel($panel) : (class_exists(\Filament\Facades\Filament::class) ? \Filament\Facades\Filament::getCurrentPanel() : null);
-            $panelId = $panelObj ? $panelObj->getId() : 'admin';
-            $routeName = "filament.{$panelId}.pages.pakpay";
-            if (\Illuminate\Support\Facades\Route::has($routeName)) {
-                return route($routeName, $parameters, $isAbsolute);
-            }
-        } catch (\Throwable $e) {}
-
         return url('/admin/multibankqr/pakpay');
     }
 
@@ -88,7 +144,7 @@ class PakPay extends Page
             'declinedCount'     => $declinedCount,
             'totalTransactions' => $totalTransactions,
             'updateInfo'        => $updateInfo,
-            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.6',
+            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.7',
             'tab'               => request()->query('tab', 'accounts'),
         ];
     }

@@ -25,17 +25,73 @@ class MultiBankAccountResource extends Resource
         return true;
     }
 
+    public static function canAccess(): bool
+    {
+        return true;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return true;
+    }
+
+    public static function can(string $action, ?\Illuminate\Database\Eloquent\Model $record = null): bool
+    {
+        return true;
+    }
+
+    public static function shouldSkipAuthorization(): bool
+    {
+        return true;
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Payments';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return 'PakPay Accounts & QRs';
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return 2;
+    }
+
+    public static function getNavigationIcon(): ?string
+    {
+        return 'heroicon-o-building-library';
+    }
+
+    public static function getNavigationUrl(): string
+    {
+        return url('/admin/multibankqr/accounts');
+    }
+
+    public static function getNavigationItems(): array
+    {
+        if (!static::shouldRegisterNavigation()) {
+            return [];
+        }
+
+        if (class_exists(\Filament\Navigation\NavigationItem::class)) {
+            return [
+                \Filament\Navigation\NavigationItem::make(static::getNavigationLabel())
+                    ->group(static::getNavigationGroup())
+                    ->icon(static::getNavigationIcon())
+                    ->sort(static::getNavigationSort())
+                    ->url(static::getNavigationUrl())
+                    ->isActiveWhen(fn (): bool => request()->is('admin/multibankqr/accounts*') || request()->is('extensions/multibankqr/admin/accounts*')),
+            ];
+        }
+
+        return [];
+    }
+
     public static function getUrl(string $name = 'index', array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
     {
-        try {
-            $panelObj = $panel ? \Filament\Facades\Filament::getPanel($panel) : (class_exists(\Filament\Facades\Filament::class) ? \Filament\Facades\Filament::getCurrentPanel() : null);
-            $panelId = $panelObj ? $panelObj->getId() : 'admin';
-            $routeName = "filament.{$panelId}.resources.multi-bank-accounts.{$name}";
-            if (\Illuminate\Support\Facades\Route::has($routeName)) {
-                return route($routeName, $parameters, $isAbsolute);
-            }
-        } catch (\Throwable $e) {}
-
         return url('/admin/multibankqr/accounts');
     }
 
@@ -48,6 +104,8 @@ class MultiBankAccountResource extends Resource
     protected static ?string $modelLabel = 'Bank Account';
 
     protected static ?int $navigationSort = 2;
+
+    protected static ?string $slug = 'multi-bank-accounts';
 
     public static function form(Form $form): Form
     {
@@ -146,8 +204,6 @@ class MultiBankAccountResource extends Resource
 
     public static function getPages(): array
     {
-        return [
-            'index' => Pages\ManageMultiBankAccounts::route('/'),
-        ];
+        return [];
     }
 }

@@ -38,14 +38,14 @@ if (!class_exists('App\Attributes\ExtensionMeta')) {
 #[ExtensionMeta(
     name: 'PakPay - Bank Transfer & QR Gateway',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord support buttons, and instant admin verification.',
-    version: '1.3.6',
+    version: '1.3.7',
     author: 'Mirza Hasnain Baig',
     url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png'
 )]
 class MultiBankQR extends Gateway
 {
-    public const VERSION = '1.3.6';
+    public const VERSION = '1.3.7';
 
     /**
      * Instantiate the gateway and ensure routes and services are immediately booted.
@@ -320,7 +320,14 @@ class MultiBankQR extends Gateway
             if (Schema::hasTable('extensions') && class_exists(\Illuminate\Support\Facades\DB::class)) {
                 try {
                     $ext = \Illuminate\Support\Facades\DB::table('extensions')->where('name', 'MultiBankQR')->first();
-                    if (!$ext) {
+                    if ($ext) {
+                        if (empty($ext->enabled)) {
+                            \Illuminate\Support\Facades\DB::table('extensions')->where('name', 'MultiBankQR')->update([
+                                'enabled'    => 1,
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    } else {
                         \Illuminate\Support\Facades\DB::table('extensions')->insert([
                             'name'       => 'MultiBankQR',
                             'type'       => 'gateway',

@@ -29,17 +29,80 @@ class MultiBankTransactionResource extends Resource
         return true;
     }
 
+    public static function canAccess(): bool
+    {
+        return true;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return true;
+    }
+
+    public static function can(string $action, ?\Illuminate\Database\Eloquent\Model $record = null): bool
+    {
+        return true;
+    }
+
+    public static function shouldSkipAuthorization(): bool
+    {
+        return true;
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Payments';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return 'PakPay Verifications';
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return 3;
+    }
+
+    public static function getNavigationIcon(): ?string
+    {
+        return 'heroicon-o-check-badge';
+    }
+
+    public static function getNavigationUrl(): string
+    {
+        return url('/admin/multibankqr/transactions');
+    }
+
+    public static function getNavigationItems(): array
+    {
+        if (!static::shouldRegisterNavigation()) {
+            return [];
+        }
+
+        if (class_exists(\Filament\Navigation\NavigationItem::class)) {
+            $item = \Filament\Navigation\NavigationItem::make(static::getNavigationLabel())
+                ->group(static::getNavigationGroup())
+                ->icon(static::getNavigationIcon())
+                ->sort(static::getNavigationSort())
+                ->url(static::getNavigationUrl())
+                ->isActiveWhen(fn (): bool => request()->is('admin/multibankqr/transactions*') || request()->is('extensions/multibankqr/admin/transactions*'));
+
+            try {
+                $badge = static::getNavigationBadge();
+                if ($badge !== null) {
+                    $item->badge($badge, color: static::getNavigationBadgeColor());
+                }
+            } catch (\Throwable $e) {}
+
+            return [$item];
+        }
+
+        return [];
+    }
+
     public static function getUrl(string $name = 'index', array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
     {
-        try {
-            $panelObj = $panel ? \Filament\Facades\Filament::getPanel($panel) : (class_exists(\Filament\Facades\Filament::class) ? \Filament\Facades\Filament::getCurrentPanel() : null);
-            $panelId = $panelObj ? $panelObj->getId() : 'admin';
-            $routeName = "filament.{$panelId}.resources.multi-bank-transactions.{$name}";
-            if (\Illuminate\Support\Facades\Route::has($routeName)) {
-                return route($routeName, $parameters, $isAbsolute);
-            }
-        } catch (\Throwable $e) {}
-
         return url('/admin/multibankqr/transactions');
     }
 
@@ -52,6 +115,8 @@ class MultiBankTransactionResource extends Resource
     protected static ?string $modelLabel = 'Payment Proof';
 
     protected static ?int $navigationSort = 3;
+
+    protected static ?string $slug = 'multi-bank-transactions';
 
     public static function getNavigationBadge(): ?string
     {
@@ -237,8 +302,6 @@ class MultiBankTransactionResource extends Resource
 
     public static function getPages(): array
     {
-        return [
-            'index' => Pages\ManageMultiBankTransactions::route('/'),
-        ];
+        return [];
     }
 }

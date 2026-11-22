@@ -120,8 +120,8 @@ class MultiBankQRTest
         assert(!in_array('pakpay_hub_notice', $fieldNames), "getConfig removes raw HTML pakpay_hub_notice placeholder");
         assert(!in_array('acc1_name', $fieldNames), "getConfig removes old acc1 clutter field");
         assert(!in_array('acc4_currency', $fieldNames), "getConfig removes old acc4 clutter field");
-        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.3.6', "Version bumped to 1.3.6");
-        echo "✓ Gateway Setup Decluttered: 5 clean fields, zero raw HTML placeholders, v1.3.6\n";
+        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.3.7', "Version bumped to 1.3.7");
+        echo "✓ Gateway Setup Decluttered: 5 clean fields, zero raw HTML placeholders, v1.3.7\n";
 
         // 9. Raw QR Payload with tokens
         $rawPayload = "00020101021132480016A0000007270401145204541153035865404{amount}5802PK5914Merchant Title6006Lahore62170113INV-{invoice_id}6304";
@@ -147,10 +147,16 @@ class MultiBankQRTest
             assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::shouldRegisterNavigation() === true, "MultiBankAccountResource navigation enabled");
             assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::shouldRegisterNavigation() === true, "MultiBankTransactionResource navigation enabled");
             assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::shouldRegisterNavigation() === true, "PakPay page navigation enabled");
+            assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::canAccess() === true, "MultiBankAccountResource canAccess true");
+            assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::canViewAny() === true, "MultiBankAccountResource canViewAny true");
+            assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::getPages() === [], "MultiBankAccountResource getPages empty array");
+            assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::getNavigationGroup() === 'Payments', "MultiBankAccountResource group is Payments");
+            assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::getNavigationGroup() === 'Payments', "MultiBankTransactionResource group is Payments");
+            assert(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::getNavigationGroup() === 'Payments', "PakPay group is Payments");
             \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::getNavigationBadge();
         }
         assert(class_exists(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQRServiceProvider::class), "MultiBankQRServiceProvider loaded");
-        echo "✓ Filament Navigation & URL Safe Fallbacks (Zero 500 error risk)\n";
+        echo "✓ Filament Navigation & URL Safe Fallbacks (Zero 500 error risk, Payments Group)\n";
 
         echo "\n🎉 All Pakistani & Security tests passed successfully!\n";
     }

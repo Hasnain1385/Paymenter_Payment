@@ -24,9 +24,23 @@ class MultiBankQRServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Standalone PSR-4 autoloader: ensures extension classes load reliably across any Paymenter core updates
+        spl_autoload_register(function ($class) {
+            $prefix = 'Paymenter\\Extensions\\Gateways\\MultiBankQR\\';
+            if (str_starts_with($class, $prefix)) {
+                $relativeClass = substr($class, strlen($prefix));
+                $file = __DIR__ . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+                if (file_exists($file)) {
+                    require_once $file;
+                }
+            }
+        });
+
         // Load routes
         if (file_exists(__DIR__ . '/routes/web.php')) {
             $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
+        } elseif (file_exists(__DIR__ . '/routes.php')) {
+            $this->loadRoutesFrom(__DIR__ . '/routes.php');
         }
 
         // Load migrations
@@ -39,25 +53,49 @@ class MultiBankQRServiceProvider extends ServiceProvider
             $this->loadViewsFrom(__DIR__ . '/resources/views', 'multibankqr');
         }
 
-        // Register Filament resources & pages into Filament panels
+        // Register Filament resources & pages into Filament panels safely
         if (class_exists(\Filament\Facades\Filament::class)) {
             try {
                 $registerWithPanel = function ($panel) {
                     if (!$panel) return;
+
+                    // 1. Resources (MultiBankAccountResource, MultiBankTransactionResource)
                     if (method_exists($panel, 'resources')) {
-                        $panel->resources([
-                            \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class,
-                            \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class,
-                        ]);
+                        $existing = method_exists($panel, 'getResources') ? $panel->getResources() : [];
+                        $toRegister = [];
+                        if (!in_array(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class, $existing)) {
+                            $toRegister[] = \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class;
+                        }
+                        if (!in_array(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class, $existing)) {
+                            $toRegister[] = \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class;
+                        }
+                        if (!empty($toRegister)) {
+                            $panel->resources($toRegister);
+                        }
                     }
+
+                    // 2. Custom Pages (PakPay)
                     if (method_exists($panel, 'pages')) {
-                        $panel->pages([
-                            \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class,
-                        ]);
+                        $existingPages = method_exists($panel, 'getPages') ? $panel->getPages() : [];
+                        if (!in_array(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class, $existingPages)) {
+                            $panel->pages([
+                                \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class,
+                            ]);
+                        }
                     }
                 };
 
-                // 1. ServingFilament event hook
+                // Hook: Filament::serving callback
+                if (method_exists(\Filament\Facades\Filament::class, 'serving')) {
+                    \Filament\Facades\Filament::serving(function () use ($registerWithPanel) {
+                        try {
+                            $panel = \Filament\Facades\Filament::getCurrentPanel();
+                            $registerWithPanel($panel);
+                        } catch (\Throwable $e) {}
+                    });
+                }
+
+                // Hook: ServingFilament event fallback
                 if (class_exists(\Filament\Events\ServingFilament::class)) {
                     \Illuminate\Support\Facades\Event::listen(\Filament\Events\ServingFilament::class, function () use ($registerWithPanel) {
                         try {
@@ -67,7 +105,7 @@ class MultiBankQRServiceProvider extends ServiceProvider
                     });
                 }
 
-                // 2. Direct panel registration if panels already booted
+                // Direct panel registration if panels already booted
                 if (method_exists(\Filament\Facades\Filament::class, 'getPanels')) {
                     foreach (\Filament\Facades\Filament::getPanels() as $panel) {
                         try {
@@ -76,7 +114,7 @@ class MultiBankQRServiceProvider extends ServiceProvider
                     }
                 }
 
-                // 3. Filament v2 fallback
+                // Filament v2 fallback
                 if (method_exists(\Filament\Facades\Filament::class, 'registerPages')) {
                     \Filament\Facades\Filament::registerPages([
                         \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class,
