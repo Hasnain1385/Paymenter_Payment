@@ -47,7 +47,7 @@
                     <span>GitHub Updates</span>
                 </a>
 
-                <a href="/admin/extensions" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700/70 transition">
+                <a href="{{ url('/admin/extensions') }}" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700/70 transition">
                     <span>Back to Extensions</span>
                 </a>
             </div>
@@ -178,7 +178,7 @@
                                 <tr id="row-{{ $t->id }}" class="hover:bg-slate-800/40 transition">
                                     <!-- Invoice # -->
                                     <td class="px-4 py-3.5 font-bold text-white whitespace-nowrap">
-                                        <a href="/admin/invoices/{{ $t->invoice_id }}" target="_blank" class="text-indigo-400 hover:underline flex items-center gap-1" title="Open Invoice in Admin">
+                                        <a href="{{ url('/admin/invoices/' . $t->invoice_id) }}" target="_blank" class="text-indigo-400 hover:underline flex items-center gap-1" title="Open Invoice in Admin">
                                             <span>#{{ $t->invoice_id }}</span>
                                             <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                         </a>
@@ -442,7 +442,8 @@
     </div>
 
     <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        const trxBase = '{{ url("") }}';
         let currentTrxLog = null;
         let trxAutoUpdateTimer = null;
         let knownTrxRowIds = new Set(@json($transactions->pluck('id')));
@@ -453,7 +454,7 @@
 
             document.getElementById('trx_log_modal_id').textContent = '#' + (t.id || '');
             document.getElementById('trx_log_modal_invoice_id').textContent = '#' + (t.invoice_id || '');
-            document.getElementById('trx_log_modal_invoice_link').href = '/admin/invoices/' + (t.invoice_id || '');
+            document.getElementById('trx_log_modal_invoice_link').href = `${trxBase}/admin/invoices/${t.invoice_id || ''}`;
             document.getElementById('trx_log_modal_amount').textContent = (t.currency || 'PKR') + ' ' + Number(t.amount || 0).toFixed(2);
             document.getElementById('trx_log_modal_bank_name').textContent = t.bank_account_name || 'Standard Gateway';
             document.getElementById('trx_log_modal_sender_name').textContent = t.sender_name || 'Customer';
@@ -581,10 +582,10 @@
 
             try {
                 const currentStatus = '{{ $currentStatus }}';
-                let url = '/admin/multibankqr/transactions/api?status=' + encodeURIComponent(currentStatus);
+                let url = `${trxBase}/admin/multibankqr/transactions/api?status=` + encodeURIComponent(currentStatus);
                 let res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                 if (!res.ok) {
-                    res = await fetch('/extensions/multibankqr/admin/transactions/api?status=' + encodeURIComponent(currentStatus), { headers: { 'Accept': 'application/json' } });
+                    res = await fetch(`${trxBase}/extensions/multibankqr/admin/transactions/api?status=` + encodeURIComponent(currentStatus), { headers: { 'Accept': 'application/json' } });
                 }
 
                 if (res.ok) {
@@ -642,7 +643,7 @@
                 rowsHtml += `
                     <tr id="row-${t.id}" class="hover:bg-slate-800/40 transition ${isNew ? 'bg-emerald-950/40 border-l-4 border-emerald-500' : ''}">
                         <td class="px-4 py-3.5 font-bold text-white whitespace-nowrap">
-                            <a href="/admin/invoices/${t.invoice_id}" target="_blank" class="text-indigo-400 hover:underline flex items-center gap-1" title="Open Invoice in Admin">
+                            <a href="${trxBase}/admin/invoices/${t.invoice_id}" target="_blank" class="text-indigo-400 hover:underline flex items-center gap-1" title="Open Invoice in Admin">
                                 <span>#${t.invoice_id}</span>
                                 <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                             </a>
@@ -802,13 +803,22 @@
             }
 
             try {
-                const res = await fetch(`/admin/multibankqr/transactions/${transactionId}/approve`, {
+                let res = await fetch(`${trxBase}/admin/multibankqr/transactions/${transactionId}/approve`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
                     }
                 });
+                if (!res.ok) {
+                    res = await fetch(`${trxBase}/extensions/multibankqr/admin/transactions/${transactionId}/approve`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        }
+                    });
+                }
                 const data = await res.json();
 
                 if (data.success) {
@@ -835,7 +845,7 @@
             if (reason === null) return; // User cancelled
 
             try {
-                const res = await fetch(`/admin/multibankqr/transactions/${transactionId}/decline`, {
+                let res = await fetch(`${trxBase}/admin/multibankqr/transactions/${transactionId}/decline`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
@@ -844,6 +854,17 @@
                     },
                     body: JSON.stringify({ reason: reason })
                 });
+                if (!res.ok) {
+                    res = await fetch(`${trxBase}/extensions/multibankqr/admin/transactions/${transactionId}/decline`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ reason: reason })
+                    });
+                }
                 const data = await res.json();
 
                 if (data.success) {

@@ -47,7 +47,7 @@
                     <span>➕ Add Bank Account</span>
                 </button>
 
-                <a href="/admin/extensions" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700/70 transition">
+                <a href="{{ url('/admin/extensions') }}" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700/70 transition">
                     <span>Back to Extensions</span>
                 </a>
             </div>
@@ -383,14 +383,15 @@
     </div>
 
     <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        const accBase = '{{ url("") }}';
 
         function openAddModal() {
             document.getElementById('addModal').classList.remove('hidden');
         }
 
         function openEditModal(account) {
-            document.getElementById('editForm').action = '/admin/multibankqr/accounts/' + account.id + '/update';
+            document.getElementById('editForm').action = `${accBase}/admin/multibankqr/accounts/${account.id}/update`;
             document.getElementById('edit_name').value = account.name || '';
             document.getElementById('edit_badge').value = account.badge || '';
             document.getElementById('edit_account_title').value = account.account_title || '';
@@ -416,13 +417,22 @@
 
         async function toggleAccount(id) {
             try {
-                const res = await fetch(`/admin/multibankqr/accounts/${id}/toggle`, {
+                let res = await fetch(`${accBase}/admin/multibankqr/accounts/${id}/toggle`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
                     }
                 });
+                if (!res.ok) {
+                    res = await fetch(`${accBase}/extensions/multibankqr/admin/accounts/${id}/toggle`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        }
+                    });
+                }
                 const data = await res.json();
                 if (data.success) {
                     showAlert(data.message, true);
@@ -448,13 +458,22 @@
             }
 
             try {
-                const res = await fetch(`/admin/multibankqr/accounts/${id}/delete`, {
+                let res = await fetch(`${accBase}/admin/multibankqr/accounts/${id}/delete`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
                     }
                 });
+                if (!res.ok) {
+                    res = await fetch(`${accBase}/extensions/multibankqr/admin/accounts/${id}/delete`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        }
+                    });
+                }
                 const data = await res.json();
                 if (data.success) {
                     showAlert(data.message, true);

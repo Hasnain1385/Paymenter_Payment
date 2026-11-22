@@ -51,16 +51,24 @@ class PakPay extends Page
             'paid'
         ])->sum('amount');
 
-        $updateInfo = GithubUpdateService::checkForUpdates();
+        $declinedCount = MultiBankTransaction::where('status', MultiBankTransaction::STATUS_DECLINED)->count();
+        $totalTransactions = MultiBankTransaction::count();
+        $updateInfo = null;
+        try {
+            $updateInfo = GithubUpdateService::checkForUpdates();
+        } catch (\Throwable $e) {}
 
         return [
-            'accounts'      => $accounts,
-            'transactions'  => $transactions,
-            'pendingCount'  => $pendingCount,
-            'verifiedCount' => $verifiedCount,
-            'verifiedTotal' => $verifiedTotal,
-            'updateInfo'    => $updateInfo,
-            'version'       => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.2.9',
+            'accounts'          => $accounts,
+            'transactions'      => $transactions,
+            'pendingCount'      => $pendingCount,
+            'verifiedCount'     => $verifiedCount,
+            'verifiedTotal'     => $verifiedTotal,
+            'declinedCount'     => $declinedCount,
+            'totalTransactions' => $totalTransactions,
+            'updateInfo'        => $updateInfo,
+            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.3',
+            'tab'               => request()->query('tab', 'accounts'),
         ];
     }
 }

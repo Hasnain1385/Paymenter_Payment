@@ -411,7 +411,7 @@
                 </div>
                 <div style="font-size: 16px; font-weight: 800; color: var(--mb-text);">Payment Verified</div>
                 <p style="font-size: 12px; color: var(--mb-text-muted); margin: 4px 0 14px;">Your payment has been confirmed and this invoice is paid.</p>
-                <a href="/invoices/{{ $invoiceId }}" class="mb-btn-submit" style="display: inline-block; width: auto; padding: 8px 18px; text-decoration: none; font-size: 13px;">View Invoice</a>
+                <a href="{{ url('/invoices/' . $invoiceId) }}" class="mb-btn-submit" style="display: inline-block; width: auto; padding: 8px 18px; text-decoration: none; font-size: 13px;">View Invoice</a>
             </div>
         @elseif($isPendingVerif)
             <!-- Pending Verification State with Auto-Polling -->

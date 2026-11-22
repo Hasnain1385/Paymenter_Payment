@@ -22,8 +22,14 @@ class ManageMultiBankAccounts extends ManageRecords
                 ->modalHeading('Add New Merchant Bank / Wallet Account'),
             Actions\Action::make('pakpayHub')
                 ->label('⚡ PakPay Full Hub & Updates')
-                ->url('/extensions/multibankqr/admin/pakpay')
-                ->openUrlInNewTab()
+                ->url(function () {
+                    if (class_exists(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class)) {
+                        try {
+                            return \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::getUrl();
+                        } catch (\Throwable $e) {}
+                    }
+                    return url('/admin/pakpay');
+                })
                 ->color('success'),
         ];
     }

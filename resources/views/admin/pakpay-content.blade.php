@@ -18,7 +18,7 @@
 
             <!-- Global Action Links -->
             <div class="flex flex-wrap items-center gap-2">
-                <a href="/admin/extensions" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition">
+                <a href="{{ url('/admin/extensions') }}" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                     <span>Gateway Settings</span>
                 </a>
@@ -694,6 +694,7 @@
 
 <script>
     const pakPayCsrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+    const pakPayBase = '{{ url("") }}';
 
     function switchPakPayTab(tab) {
         document.getElementById('tab-content-accounts').classList.add('hidden');
@@ -727,7 +728,7 @@
     }
 
     function openEditAccountModal(acc) {
-        document.getElementById('editAccountForm').action = `/admin/multibankqr/accounts/${acc.id}/update`;
+        document.getElementById('editAccountForm').action = `${pakPayBase}/admin/multibankqr/accounts/${acc.id}/update`;
         document.getElementById('hub_edit_name').value = acc.name || '';
         document.getElementById('hub_edit_badge').value = acc.badge || '';
         document.getElementById('hub_edit_account_title').value = acc.account_title || '';
@@ -745,7 +746,7 @@
 
     async function togglePakPayAccount(id) {
         try {
-            const res = await fetch(`/admin/multibankqr/accounts/${id}/toggle`, {
+            const res = await fetch(`${pakPayBase}/admin/multibankqr/accounts/${id}/toggle`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': pakPayCsrf,
@@ -777,7 +778,7 @@
         }
 
         try {
-            const res = await fetch(`/admin/multibankqr/accounts/${id}/delete`, {
+            const res = await fetch(`${pakPayBase}/admin/multibankqr/accounts/${id}/delete`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': pakPayCsrf,
@@ -807,7 +808,7 @@
 
         document.getElementById('log_modal_id').textContent = '#' + (trx.id || '');
         document.getElementById('log_modal_invoice_id').textContent = '#' + (trx.invoice_id || '');
-        document.getElementById('log_modal_invoice_link').href = '/admin/invoices/' + (trx.invoice_id || '');
+        document.getElementById('log_modal_invoice_link').href = `${pakPayBase}/admin/invoices/${trx.invoice_id || ''}`;
         document.getElementById('log_modal_amount').textContent = (trx.currency || 'PKR') + ' ' + Number(trx.amount || 0).toFixed(2);
         document.getElementById('log_modal_bank_name').textContent = trx.bank_account_name || 'Standard Gateway';
         document.getElementById('log_modal_sender_name').textContent = trx.sender_name || 'Customer';
@@ -935,11 +936,11 @@
         if (icon) icon.classList.add('animate-spin');
 
         try {
-            // Try admin route first, then fallback to extensions route
-            let url = '/admin/multibankqr/transactions/api';
+            // Try admin route first, then fallback to extensions route (dynamic base URL)
+            let url = `${pakPayBase}/admin/multibankqr/transactions/api`;
             let res = await fetch(url, { headers: { 'Accept': 'application/json' } });
             if (!res.ok) {
-                res = await fetch('/extensions/multibankqr/admin/transactions/api', { headers: { 'Accept': 'application/json' } });
+                res = await fetch(`${pakPayBase}/extensions/multibankqr/admin/transactions/api`, { headers: { 'Accept': 'application/json' } });
             }
 
             if (res.ok) {
@@ -1113,15 +1114,24 @@
     }
 
     async function verifyTransaction(id, action) {
-        const url = `/admin/multibankqr/transactions/${id}/${action}`;
+        let url = `${pakPayBase}/admin/multibankqr/transactions/${id}/${action}`;
         try {
-            const res = await fetch(url, {
+            let res = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': pakPayCsrf,
                     'Accept': 'application/json'
                 }
             });
+            if (!res.ok) {
+                res = await fetch(`${pakPayBase}/extensions/multibankqr/admin/transactions/${id}/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': pakPayCsrf,
+                        'Accept': 'application/json'
+                    }
+                });
+            }
             const data = await res.json();
             if (data.success) {
                 showPakPayAlert(data.message, true);
@@ -1146,16 +1156,25 @@
     async function checkPakPayUpdates() {
         showPakPayAlert('Checking GitHub for new releases...', true);
         try {
-            const res = await fetch('/admin/multibankqr/updates/check', {
+            let res = await fetch(`${pakPayBase}/admin/multibankqr/updates/check`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': pakPayCsrf,
                     'Accept': 'application/json'
                 }
             });
+            if (!res.ok) {
+                res = await fetch(`${pakPayBase}/extensions/multibankqr/admin/updates/check`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': pakPayCsrf,
+                        'Accept': 'application/json'
+                    }
+                });
+            }
             const data = await res.json();
             if (data.success) {
-                document.getElementById('remoteVersionLabel').textContent = 'v' + (data.update_info?.latest_version || '1.2.8');
+                document.getElementById('remoteVersionLabel').textContent = 'v' + (data.update_info?.latest_version || '1.3.2');
                 document.getElementById('remoteStatusLabel').textContent = data.update_info?.has_update ? '🔔 New update available!' : '✅ Gateway is up to date';
                 showPakPayAlert(data.message, true);
             } else {
@@ -1173,13 +1192,22 @@
 
         showPakPayAlert('Downloading and applying update in-place...', true);
         try {
-            const res = await fetch('/admin/multibankqr/updates/apply', {
+            let res = await fetch(`${pakPayBase}/admin/multibankqr/updates/apply`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': pakPayCsrf,
                     'Accept': 'application/json'
                 }
             });
+            if (!res.ok) {
+                res = await fetch(`${pakPayBase}/extensions/multibankqr/admin/updates/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': pakPayCsrf,
+                        'Accept': 'application/json'
+                    }
+                });
+            }
             const data = await res.json();
             if (data.success) {
                 showPakPayAlert(data.message + ' Reloading...', true);

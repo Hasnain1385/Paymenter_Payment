@@ -2,6 +2,7 @@
 
 namespace Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource\Pages;
 
+use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 use Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource;
 
@@ -15,6 +16,18 @@ class ManageMultiBankTransactions extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Actions\Action::make('pakpayHub')
+                ->label('⚡ PakPay Full Hub & Updates')
+                ->url(function () {
+                    if (class_exists(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class)) {
+                        try {
+                            return \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::getUrl();
+                        } catch (\Throwable $e) {}
+                    }
+                    return url('/admin/pakpay');
+                })
+                ->color('success'),
+        ];
     }
 }
