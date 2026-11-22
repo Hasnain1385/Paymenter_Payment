@@ -23,15 +23,10 @@
             box-sizing: border-box;
             transition: background-color 0.2s, color 0.2s;
         }
-        .dark body {
+        .dark body,
+        html.dark body {
             background-color: #0b1120;
             color: #f8fafc;
-        }
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #0b1120;
-                color: #f8fafc;
-            }
         }
         .mb-topbar {
             max-width: 680px;

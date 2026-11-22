@@ -11,8 +11,13 @@
 
 <div class="mb-checkout-root">
     <style>
-        /* Scoped Self-Contained Theme Variables - Bulletproof in Dark and Light Modes */
-        .mb-checkout-root {
+        /* Scoped Self-Contained Theme Variables - Clean & Crisp in Light & Dark Modes */
+        .mb-checkout-root,
+        html:not(.dark) .mb-checkout-root,
+        body:not(.dark) .mb-checkout-root,
+        .light .mb-checkout-root,
+        [data-theme="light"] .mb-checkout-root,
+        [data-bs-theme="light"] .mb-checkout-root {
             --mb-bg: #ffffff;
             --mb-card: #f8fafc;
             --mb-card-hover: #f1f5f9;
@@ -34,26 +39,9 @@
             padding: 4px;
         }
 
-        /* Auto-Detect Dark Mode from System or Parent Theme */
-        @media (prefers-color-scheme: dark) {
-            .mb-checkout-root {
-                --mb-bg: #0f172a;
-                --mb-card: #1e293b;
-                --mb-card-hover: #243247;
-                --mb-border: #334155;
-                --mb-border-active: #10b981;
-                --mb-text: #f8fafc;
-                --mb-text-muted: #94a3b8;
-                --mb-input-bg: #0b1120;
-                --mb-input-border: #334155;
-                --mb-chip-bg: #0b1120;
-                --mb-chip-text: #cbd5e1;
-                --mb-qr-bg: #ffffff;
-                --mb-qr-border: #475569;
-            }
-        }
-
-        /* Force Dark Mode when .dark is present anywhere on parent */
+        /* Dark Mode: Activated strictly when Paymenter or parent container has .dark class */
+        html.dark .mb-checkout-root,
+        body.dark .mb-checkout-root,
         .dark .mb-checkout-root,
         [data-theme="dark"] .mb-checkout-root,
         [data-bs-theme="dark"] .mb-checkout-root {
@@ -239,21 +227,24 @@
     <!-- 1. Header Card: Invoice #, Status & Amount -->
     <div class="mb-box">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--mb-border);">
-            <div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                    <span style="font-size: 12px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase;">
-                        Invoice #{{ $invoiceId }}
-                    </span>
-                    @if($isVerified)
-                        <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(16, 185, 129, 0.15); color: #10b981;">Paid</span>
-                    @elseif($isPendingVerif)
-                        <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(245, 158, 11, 0.15); color: #f59e0b;">Under Verification</span>
-                    @else
-                        <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--mb-chip-bg); color: var(--mb-text-muted);">Pending Payment</span>
-                    @endif
-                </div>
-                <div style="font-size: 18px; font-weight: 800; color: var(--mb-text);">
-                    {{ $gatewayTitle ?? 'Bank Transfer & QR Pay' }}
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png" alt="PakBank" style="width: 44px; height: 44px; border-radius: 12px; object-fit: contain; box-shadow: 0 2px 5px rgba(0,0,0,0.08); flex-shrink: 0;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase;">
+                            Invoice #{{ $invoiceId }}
+                        </span>
+                        @if($isVerified)
+                            <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(16, 185, 129, 0.15); color: #10b981;">Paid</span>
+                        @elseif($isPendingVerif)
+                            <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(245, 158, 11, 0.15); color: #f59e0b;">Under Verification</span>
+                        @else
+                            <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--mb-chip-bg); color: var(--mb-text-muted);">Pending Payment</span>
+                        @endif
+                    </div>
+                    <div style="font-size: 18px; font-weight: 800; color: var(--mb-text);">
+                        {{ $gatewayTitle ?? 'Bank Transfer & QR Pay' }}
+                    </div>
                 </div>
             </div>
 

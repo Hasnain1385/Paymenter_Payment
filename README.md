@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png" width="128" height="128" alt="PakBank QR Logo" style="border-radius: 28px;">
+</p>
+
 # PakBank QR & Manual Payment Gateway for Paymenter
 
 A dedicated payment gateway plugin for **Paymenter** designed for **Pakistani payments** (Raast P2P/P2M, Meezan Bank, Easypaisa, JazzCash, SadaPay, NayaPay, Bank Alfalah, and commercial banks).

@@ -13,9 +13,7 @@
         <!-- Top Header & Navigation -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
             <div class="flex items-center gap-3">
-                <span class="inline-flex items-center justify-center p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                </span>
+                <img src="https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png" alt="PakBank" class="w-10 h-10 rounded-xl shadow-md shrink-0">
                 <div>
                     <h1 class="text-xl font-bold text-white">Payment History & Verification</h1>
                     <p class="text-xs text-slate-400">Review customer payment proofs, approve or decline transactions with 1 click, and track revenue</p>
