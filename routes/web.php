@@ -35,6 +35,12 @@ Route::middleware(['web'])->group(function () {
         Route::get('/transactions', [MultiBankAdminController::class, 'indexTransactions'])
             ->name('transactions');
 
+        // Async Live Polling & Log Details APIs
+        Route::get('/transactions/api', [MultiBankAdminController::class, 'apiTransactions'])
+            ->name('transactions.api');
+        Route::get('/transactions/{id}/details', [MultiBankAdminController::class, 'apiTransactionDetails'])
+            ->name('transactions.details');
+
         // Manual Verification Actions
         Route::post('/transactions/{id}/approve', [MultiBankAdminController::class, 'approve'])
             ->name('approve');
@@ -88,6 +94,8 @@ Route::middleware(['web'])->group(function () {
         Route::get('/', [MultiBankAdminController::class, 'indexDashboard']);
         Route::get('/accounts', [MultiBankAdminController::class, 'indexAccounts']);
         Route::get('/transactions', [MultiBankAdminController::class, 'indexTransactions']);
+        Route::get('/transactions/api', [MultiBankAdminController::class, 'apiTransactions']);
+        Route::get('/transactions/{id}/details', [MultiBankAdminController::class, 'apiTransactionDetails']);
         Route::get('/updates', [MultiBankAdminController::class, 'indexUpdates']);
         Route::post('/transactions/{id}/approve', [MultiBankAdminController::class, 'approve']);
         Route::post('/transactions/{id}/decline', [MultiBankAdminController::class, 'decline']);

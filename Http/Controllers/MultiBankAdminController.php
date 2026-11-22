@@ -422,7 +422,174 @@ class MultiBankAdminController extends Controller
             'totalCount'    => $totalCount,
             'currentStatus' => $status ?: 'all',
             'search'        => $search ?: '',
-            'version'       => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.2.2',
+            'version'       => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.1',
+        ]);
+    }
+
+    /**
+     * API endpoint to fetch recent transactions with live metrics for async auto-refresh.
+     */
+    public function apiTransactions(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $query = MultiBankTransaction::query()->orderBy('created_at', 'desc');
+
+        $status = $request->query('status');
+        if ($status === 'pending') {
+            $query->whereIn('status', [
+                MultiBankTransaction::STATUS_PENDING_VERIFICATION,
+                'pending',
+                'under_review'
+            ]);
+        } elseif ($status === 'verified') {
+            $query->whereIn('status', [
+                MultiBankTransaction::STATUS_VERIFIED,
+                'approved',
+                'paid'
+            ]);
+        } elseif ($status === 'declined') {
+            $query->where('status', MultiBankTransaction::STATUS_DECLINED);
+        }
+
+        $search = $request->query('search');
+        if (!empty($search)) {
+            $sanitizedSearch = htmlspecialchars(strip_tags(trim($search)), ENT_QUOTES, 'UTF-8');
+            $query->where(function ($q) use ($sanitizedSearch) {
+                $q->where('invoice_id', 'like', "%{$sanitizedSearch}%")
+                  ->orWhere('transaction_id', 'like', "%{$sanitizedSearch}%")
+                  ->orWhere('sender_name', 'like', "%{$sanitizedSearch}%")
+                  ->orWhere('bank_account_name', 'like', "%{$sanitizedSearch}%");
+            });
+        }
+
+        $limit = (int) $request->query('limit', 50);
+        if ($limit < 1 || $limit > 200) $limit = 50;
+
+        $transactions = $query->take($limit)->get();
+
+        $pendingCount = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_PENDING_VERIFICATION,
+            'pending',
+            'under_review'
+        ])->count();
+
+        $verifiedCount = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_VERIFIED,
+            'approved',
+            'paid'
+        ])->count();
+
+        $verifiedTotal = MultiBankTransaction::whereIn('status', [
+            MultiBankTransaction::STATUS_VERIFIED,
+            'approved',
+            'paid'
+        ])->sum('amount');
+
+        $declinedCount = MultiBankTransaction::where('status', MultiBankTransaction::STATUS_DECLINED)->count();
+        $totalCount = MultiBankTransaction::count();
+
+        $items = $transactions->map(function ($t) {
+            return [
+                'id'                => $t->id,
+                'invoice_id'        => $t->invoice_id,
+                'user_id'           => $t->user_id,
+                'bank_account_name' => $t->bank_account_name ?: 'Standard',
+                'amount'            => (float) $t->amount,
+                'amount_formatted'  => number_format((float) $t->amount, 2),
+                'currency'          => $t->currency,
+                'transaction_id'    => $t->transaction_id,
+                'sender_name'       => $t->sender_name ?: 'Customer',
+                'sender_account'    => $t->sender_account ?: '',
+                'proof_image'       => $t->proof_image,
+                'proof_image_path'  => $t->proof_image_path,
+                'customer_notes'    => $t->customer_notes ?: '',
+                'status'            => $t->status,
+                'status_label'      => $t->getStatusLabel(),
+                'is_verified'       => $t->isVerified(),
+                'is_pending'        => $t->isPendingVerification(),
+                'is_declined'       => $t->isDeclined(),
+                'admin_notes'       => $t->admin_notes ?: '',
+                'decline_reason'    => $t->decline_reason ?: '',
+                'reviewed_by'       => $t->reviewed_by,
+                'reviewed_at'       => $t->reviewed_at ? $t->reviewed_at->format('M d, Y H:i') : null,
+                'created_at'        => $t->created_at ? $t->created_at->format('M d, H:i') : 'Recently',
+                'created_at_full'   => $t->created_at ? $t->created_at->format('M d, Y H:i:s') : 'Recently',
+                'created_at_human'  => $t->created_at ? $t->created_at->diffForHumans() : '',
+                'timestamp'         => $t->created_at ? $t->created_at->timestamp : 0,
+            ];
+        });
+
+        return response()->json([
+            'success'                => true,
+            'transactions'           => $items,
+            'pendingCount'           => $pendingCount,
+            'verifiedCount'          => $verifiedCount,
+            'verifiedTotal'          => (float) $verifiedTotal,
+            'verifiedTotalFormatted' => number_format((float) $verifiedTotal, 2),
+            'declinedCount'          => $declinedCount,
+            'totalCount'             => $totalCount,
+            'synced_at'              => now()->format('H:i:s'),
+        ]);
+    }
+
+    /**
+     * API endpoint to retrieve complete payment log details for a single transaction.
+     */
+    public function apiTransactionDetails(Request $request, $id)
+    {
+        $this->authorizeAdmin();
+
+        $id = (int) $id;
+        $t = MultiBankTransaction::findOrFail($id);
+
+        $invoiceInfo = null;
+        try {
+            $invoiceClass = '\App\Models\Invoice';
+            if (class_exists($invoiceClass)) {
+                $inv = $invoiceClass::find($t->invoice_id);
+                if ($inv) {
+                    $invoiceInfo = [
+                        'id'         => $inv->id,
+                        'status'     => $inv->status,
+                        'total'      => (float) ($inv->total ?? 0),
+                        'currency'   => $inv->currency_code ?? ($inv->currency ?? 'PKR'),
+                        'user_name'  => $inv->user ? ($inv->user->name ?? 'Customer') : 'Customer',
+                        'user_email' => $inv->user ? ($inv->user->email ?? '') : '',
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return response()->json([
+            'success'     => true,
+            'transaction' => [
+                'id'                => $t->id,
+                'invoice_id'        => $t->invoice_id,
+                'user_id'           => $t->user_id,
+                'bank_account_name' => $t->bank_account_name ?: 'Standard',
+                'amount'            => (float) $t->amount,
+                'amount_formatted'  => number_format((float) $t->amount, 2),
+                'currency'          => $t->currency,
+                'transaction_id'    => $t->transaction_id,
+                'sender_name'       => $t->sender_name ?: 'Customer',
+                'sender_account'    => $t->sender_account ?: '',
+                'proof_image'       => $t->proof_image,
+                'proof_image_path'  => $t->proof_image_path,
+                'customer_notes'    => $t->customer_notes ?: '',
+                'status'            => $t->status,
+                'status_label'      => $t->getStatusLabel(),
+                'is_verified'       => $t->isVerified(),
+                'is_pending'        => $t->isPendingVerification(),
+                'is_declined'       => $t->isDeclined(),
+                'admin_notes'       => $t->admin_notes ?: '',
+                'decline_reason'    => $t->decline_reason ?: '',
+                'reviewed_by'       => $t->reviewed_by,
+                'reviewed_at'       => $t->reviewed_at ? $t->reviewed_at->format('M d, Y H:i:s') : null,
+                'created_at'        => $t->created_at ? $t->created_at->format('M d, Y H:i:s') : 'Recently',
+                'created_at_human'  => $t->created_at ? $t->created_at->diffForHumans() : '',
+            ],
+            'invoice'     => $invoiceInfo,
         ]);
     }
 

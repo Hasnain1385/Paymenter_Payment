@@ -219,77 +219,104 @@
         <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
             <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-sm font-bold text-white">Submitted Transactions & Receipts</h2>
-                    <p class="text-xs text-slate-400">Review customer proof submissions and approve invoices in one click</p>
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <span>Submitted Transactions & Verification Logs</span>
+                        <span id="verif_count_badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-300">{{ count($transactions) }}</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">Review customer proof submissions, open full verification logs, and approve invoices</p>
+                </div>
+
+                <!-- Controls: Refresh Logs Button & Live Auto-Update Rule -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Auto-Update Toggle Rule -->
+                    <label class="inline-flex items-center gap-2 cursor-pointer bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs hover:border-slate-700 transition" title="Automatically poll for new customer payments and paid invoices">
+                        <input type="checkbox" id="pakpay_auto_refresh_toggle" checked onchange="toggleAutoUpdate(this.checked)" class="w-3.5 h-3.5 text-emerald-600 rounded bg-slate-900 border-slate-700 focus:ring-0">
+                        <span class="flex items-center gap-1.5 font-medium text-slate-300">
+                            <span id="pakpay_live_indicator" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span id="pakpay_auto_label">Auto-Update (10s)</span>
+                        </span>
+                    </label>
+
+                    <!-- Refresh Button -->
+                    <button type="button" onclick="refreshPakPayTransactions(true)" id="pakpay_refresh_btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition" title="Manually refresh payment verification logs">
+                        <svg id="pakpay_refresh_icon" class="w-3.5 h-3.5 text-emerald-400 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>Refresh Logs</span>
+                    </button>
+
+                    <span id="pakpay_last_synced" class="text-[11px] text-slate-500 hidden sm:inline-block">Synced just now</span>
                 </div>
             </div>
 
             <!-- Table of Transactions -->
-            @if(count($transactions) === 0)
-                <div class="p-12 text-center space-y-3">
-                    <p class="text-sm text-slate-400">No transactions recorded yet.</p>
-                </div>
-            @else
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
-                                <th class="p-3">Invoice</th>
-                                <th class="p-3">Customer / Sender</th>
-                                <th class="p-3">Amount</th>
-                                <th class="p-3">Bank Account</th>
-                                <th class="p-3">Transaction ID</th>
-                                <th class="p-3">Receipt</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3">Submitted</th>
-                                <th class="p-3 text-right">Verification Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800/80">
-                            @foreach($transactions as $trx)
-                                <tr id="trx-row-{{ $trx->id }}" class="hover:bg-slate-800/40 transition">
-                                    <td class="p-3 font-semibold text-white">#{{ $trx->invoice_id }}</td>
-                                    <td class="p-3 text-slate-300">{{ $trx->sender_name ?: 'Customer' }}</td>
-                                    <td class="p-3 font-bold text-emerald-400">{{ $trx->currency }} {{ number_format($trx->amount, 2) }}</td>
-                                    <td class="p-3 text-slate-300">{{ $trx->bank_account_name ?: 'Standard' }}</td>
-                                    <td class="p-3 font-mono text-slate-200 select-all">{{ $trx->transaction_id }}</td>
-                                    <td class="p-3">
-                                        @if($trx->proof_image_path)
-                                            <button type="button" onclick="previewReceiptImage('{{ $trx->proof_image_path }}', 'Invoice #{{ $trx->invoice_id }} ({{ $trx->transaction_id }})')" class="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded border border-indigo-800/40">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>View</span>
+            <div id="pakpay_empty_state" class="{{ count($transactions) === 0 ? '' : 'hidden' }} p-12 text-center space-y-3">
+                <p class="text-sm text-slate-400">No transactions recorded yet.</p>
+            </div>
+
+            <div id="pakpay_table_wrapper" class="{{ count($transactions) === 0 ? 'hidden' : '' }} overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                            <th class="p-3">Invoice</th>
+                            <th class="p-3">Customer / Sender</th>
+                            <th class="p-3">Amount</th>
+                            <th class="p-3">Bank Account</th>
+                            <th class="p-3">Transaction ID</th>
+                            <th class="p-3">Receipt</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Submitted</th>
+                            <th class="p-3 text-right">Actions & Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pakpay_trx_tbody" class="divide-y divide-slate-800/80">
+                        @foreach($transactions as $trx)
+                            <tr id="trx-row-{{ $trx->id }}" class="hover:bg-slate-800/40 transition">
+                                <td class="p-3 font-semibold text-white">#{{ $trx->invoice_id }}</td>
+                                <td class="p-3 text-slate-300">{{ $trx->sender_name ?: 'Customer' }}</td>
+                                <td class="p-3 font-bold text-emerald-400">{{ $trx->currency }} {{ number_format($trx->amount, 2) }}</td>
+                                <td class="p-3 text-slate-300">{{ $trx->bank_account_name ?: 'Standard' }}</td>
+                                <td class="p-3 font-mono text-slate-200 select-all">{{ $trx->transaction_id }}</td>
+                                <td class="p-3">
+                                    @if($trx->proof_image_path)
+                                        <button type="button" onclick="previewReceiptImage('{{ $trx->proof_image_path }}', 'Invoice #{{ $trx->invoice_id }} ({{ $trx->transaction_id }})')" class="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded border border-indigo-800/40">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>View</span>
+                                        </button>
+                                    @else
+                                        <span class="text-slate-600 text-[11px]">No Receipt</span>
+                                    @endif
+                                </td>
+                                <td class="p-3">
+                                    <span id="trx-status-{{ $trx->id }}" class="inline-block px-2 py-0.5 text-[10px] font-bold rounded-md
+                                        {{ in_array($trx->status, ['verified', 'approved', 'paid']) ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : (in_array($trx->status, ['declined', 'rejected']) ? 'bg-red-950 text-red-400 border border-red-800/60' : 'bg-amber-950 text-amber-300 border border-amber-800/60') }}">
+                                        {{ ucfirst(str_replace('_', ' ', $trx->status)) }}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-slate-400 text-[11px] whitespace-nowrap">{{ $trx->created_at ? $trx->created_at->format('M d, H:i') : 'Recently' }}</td>
+                                <td class="p-3 text-right whitespace-nowrap">
+                                    <div class="inline-flex items-center gap-1.5">
+                                        <!-- Log Details Modal Trigger Button -->
+                                        <button type="button" onclick='openLogDetailsModal(@json($trx))' class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded border border-slate-700 transition" title="Inspect Full Payment Verification Log">
+                                            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Log Details</span>
+                                        </button>
+
+                                        @if(!in_array($trx->status, ['verified', 'approved', 'paid']))
+                                            <button type="button" onclick="verifyTransaction({{ $trx->id }}, 'approve')" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition shadow">
+                                                <span>✅ Approve</span>
                                             </button>
-                                        @else
-                                            <span class="text-slate-600 text-[11px]">No Receipt</span>
                                         @endif
-                                    </td>
-                                    <td class="p-3">
-                                        <span id="trx-status-{{ $trx->id }}" class="inline-block px-2 py-0.5 text-[10px] font-bold rounded-md
-                                            {{ in_array($trx->status, ['verified', 'approved', 'paid']) ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : (in_array($trx->status, ['declined', 'rejected']) ? 'bg-red-950 text-red-400 border border-red-800/60' : 'bg-amber-950 text-amber-300 border border-amber-800/60') }}">
-                                            {{ ucfirst(str_replace('_', ' ', $trx->status)) }}
-                                        </span>
-                                    </td>
-                                    <td class="p-3 text-slate-400 text-[11px] whitespace-nowrap">{{ $trx->created_at ? $trx->created_at->format('M d, H:i') : 'Recently' }}</td>
-                                    <td class="p-3 text-right whitespace-nowrap">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            @if(!in_array($trx->status, ['verified', 'approved', 'paid']))
-                                                <button type="button" onclick="verifyTransaction({{ $trx->id }}, 'approve')" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition shadow">
-                                                    <span>✅ Approve</span>
-                                                </button>
-                                            @endif
-                                            @if(!in_array($trx->status, ['declined', 'rejected']))
-                                                <button type="button" onclick="verifyTransaction({{ $trx->id }}, 'decline')" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-red-950/70 hover:bg-red-900 border border-red-700/60 text-red-300 rounded transition">
-                                                    <span>❌ Decline</span>
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
+                                        @if(!in_array($trx->status, ['declined', 'rejected']))
+                                            <button type="button" onclick="verifyTransaction({{ $trx->id }}, 'decline')" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-red-950/70 hover:bg-red-900 border border-red-700/60 text-red-300 rounded transition">
+                                                <span>❌ Decline</span>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -515,6 +542,135 @@
         </div>
     </div>
 
+    <!-- TRANSACTION LOG DETAILS MODAL -->
+    <div id="logDetailsModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeLogDetailsModal()">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span>Payment Verification Log</span>
+                            <span id="log_modal_id" class="text-xs text-slate-400 font-mono">#--</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-400">Complete audit trail & customer submission details</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="log_modal_status_badge" class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-300">--</span>
+                    <button type="button" onclick="closeLogDetailsModal()" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <!-- Invoice Details Tile -->
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Invoice Details</span>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Invoice:</span>
+                        <a id="log_modal_invoice_link" href="#" target="_blank" class="font-bold text-indigo-400 hover:underline inline-flex items-center gap-1">
+                            <span id="log_modal_invoice_id">#--</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Amount Due:</span>
+                        <span id="log_modal_amount" class="font-bold text-emerald-400 font-mono">PKR --</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Payment Gateway:</span>
+                        <span id="log_modal_bank_name" class="text-slate-200 font-medium truncate max-w-[150px]">--</span>
+                    </div>
+                </div>
+
+                <!-- Customer & Sender Tile -->
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Customer / Sender</span>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Account Title:</span>
+                        <span id="log_modal_sender_name" class="font-semibold text-slate-200 truncate max-w-[150px]">--</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Sender Account:</span>
+                        <span id="log_modal_sender_account" class="font-mono text-slate-300 select-all truncate max-w-[150px]">--</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Submitted:</span>
+                        <span id="log_modal_submitted_at" class="text-slate-400 truncate max-w-[150px]">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Reference Tile (Full Width) -->
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 flex items-center justify-between gap-3 text-xs">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Transaction ID / UTR / Reference</span>
+                    <span id="log_modal_trx_id" class="font-mono font-bold text-emerald-400 text-sm select-all">--</span>
+                </div>
+                <button type="button" onclick="copyLogTrx()" class="px-2.5 py-1 text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition">
+                    <span id="log_modal_copy_text">Copy TRX</span>
+                </button>
+            </div>
+
+            <!-- Customer Notes if any -->
+            <div id="log_modal_notes_box" class="hidden bg-slate-950/40 p-3 rounded-xl border border-slate-800/60 text-xs">
+                <span class="text-[10px] uppercase font-bold text-slate-500 block tracking-wider mb-1">Customer Remarks / Notes</span>
+                <p id="log_modal_notes" class="text-slate-300 italic"></p>
+            </div>
+
+            <!-- Receipt Proof Section -->
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 text-xs space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Payment Receipt Screenshot</span>
+                    <a id="log_modal_receipt_download" href="#" target="_blank" download class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1">
+                        <span>Open Original Image</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+                <div id="log_modal_receipt_container" class="bg-black/60 rounded-lg p-2 flex items-center justify-center max-h-56 overflow-hidden">
+                    <img id="log_modal_receipt_img" src="" alt="Proof Screenshot" class="max-h-52 w-auto object-contain rounded cursor-pointer transition hover:opacity-95" onclick="previewReceiptImage(this.src, 'Proof')">
+                </div>
+                <div id="log_modal_no_receipt" class="hidden text-center py-4 text-slate-500 text-xs">
+                    No screenshot receipt was uploaded for this transaction.
+                </div>
+            </div>
+
+            <!-- Admin Audit Trail -->
+            <div id="log_modal_audit_box" class="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60 text-xs space-y-1 text-slate-400">
+                <span class="text-[10px] uppercase font-bold text-slate-500 block tracking-wider mb-1">Verification Audit Trail</span>
+                <div class="flex items-center justify-between">
+                    <span>Reviewed By:</span>
+                    <span id="log_modal_reviewer" class="text-slate-300 font-medium">--</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>Reviewed At:</span>
+                    <span id="log_modal_reviewed_at" class="text-slate-300">--</span>
+                </div>
+                <div id="log_modal_admin_notes_row" class="hidden pt-1 border-t border-slate-800">
+                    <span class="text-slate-400 block mb-0.5">Admin Note:</span>
+                    <span id="log_modal_admin_notes" class="text-amber-300 font-medium"></span>
+                </div>
+                <div id="log_modal_decline_row" class="hidden pt-1 border-t border-slate-800">
+                    <span class="text-slate-400 block mb-0.5">Decline Reason:</span>
+                    <span id="log_modal_decline_reason" class="text-red-400 font-medium"></span>
+                </div>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeLogDetailsModal()" class="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">Close</button>
+                <div id="log_modal_actions" class="flex items-center gap-2">
+                    <button type="button" id="log_modal_approve_btn" onclick="approveFromModal()" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-md transition">✅ Verify & Mark Invoice Paid</button>
+                    <button type="button" id="log_modal_decline_btn" onclick="declineFromModal()" class="px-3 py-2 text-xs font-bold bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-300 rounded-lg transition">❌ Decline</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- IMPORT FROM SETTINGS MODAL -->
     <div id="importSettingsModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -640,6 +796,314 @@
             showPakPayAlert('Failed to remove account: ' + e.message, false);
         }
     }
+
+    let currentLogTrx = null;
+    let autoUpdateInterval = null;
+    let knownTrxIds = new Set(@json($transactions->pluck('id')));
+
+    function openLogDetailsModal(trx) {
+        if (!trx) return;
+        currentLogTrx = trx;
+
+        document.getElementById('log_modal_id').textContent = '#' + (trx.id || '');
+        document.getElementById('log_modal_invoice_id').textContent = '#' + (trx.invoice_id || '');
+        document.getElementById('log_modal_invoice_link').href = '/admin/invoices/' + (trx.invoice_id || '');
+        document.getElementById('log_modal_amount').textContent = (trx.currency || 'PKR') + ' ' + Number(trx.amount || 0).toFixed(2);
+        document.getElementById('log_modal_bank_name').textContent = trx.bank_account_name || 'Standard Gateway';
+        document.getElementById('log_modal_sender_name').textContent = trx.sender_name || 'Customer';
+        document.getElementById('log_modal_sender_account').textContent = trx.sender_account || 'Not specified';
+        document.getElementById('log_modal_submitted_at').textContent = trx.created_at_human ? (trx.created_at_human + ' (' + trx.created_at + ')') : (trx.created_at || 'Recently');
+        document.getElementById('log_modal_trx_id').textContent = trx.transaction_id || 'N/A';
+
+        // Status badge
+        const badge = document.getElementById('log_modal_status_badge');
+        const isVerif = ['verified', 'approved', 'paid'].includes(trx.status);
+        const isDecl = ['declined', 'rejected'].includes(trx.status);
+
+        if (isVerif) {
+            badge.className = 'px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800';
+            badge.textContent = 'Verified / Paid';
+        } else if (isDecl) {
+            badge.className = 'px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-red-950 text-red-400 border border-red-800';
+            badge.textContent = 'Declined';
+        } else {
+            badge.className = 'px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-950 text-amber-300 border border-amber-800';
+            badge.textContent = 'Pending Verification';
+        }
+
+        // Customer notes
+        const notesBox = document.getElementById('log_modal_notes_box');
+        const notesText = document.getElementById('log_modal_notes');
+        if (trx.customer_notes && trx.customer_notes.trim()) {
+            notesText.textContent = '"' + trx.customer_notes.trim() + '"';
+            notesBox.classList.remove('hidden');
+        } else {
+            notesBox.classList.add('hidden');
+        }
+
+        // Receipt Proof
+        const receiptImg = document.getElementById('log_modal_receipt_img');
+        const receiptContainer = document.getElementById('log_modal_receipt_container');
+        const noReceipt = document.getElementById('log_modal_no_receipt');
+        const downloadLink = document.getElementById('log_modal_receipt_download');
+        const proofPath = trx.proof_image_path || (trx.proof_image ? '/' + trx.proof_image.replace(/^\//, '') : null);
+
+        if (proofPath) {
+            receiptImg.src = proofPath;
+            downloadLink.href = proofPath;
+            downloadLink.classList.remove('hidden');
+            receiptContainer.classList.remove('hidden');
+            noReceipt.classList.add('hidden');
+        } else {
+            downloadLink.classList.add('hidden');
+            receiptContainer.classList.add('hidden');
+            noReceipt.classList.remove('hidden');
+        }
+
+        // Audit Trail
+        document.getElementById('log_modal_reviewer').textContent = trx.reviewed_by ? ('Admin #' + trx.reviewed_by) : 'Not yet reviewed';
+        document.getElementById('log_modal_reviewed_at').textContent = trx.reviewed_at || 'Pending';
+
+        const adminNotesRow = document.getElementById('log_modal_admin_notes_row');
+        if (trx.admin_notes) {
+            document.getElementById('log_modal_admin_notes').textContent = trx.admin_notes;
+            adminNotesRow.classList.remove('hidden');
+        } else {
+            adminNotesRow.classList.add('hidden');
+        }
+
+        const declineRow = document.getElementById('log_modal_decline_row');
+        if (trx.decline_reason) {
+            document.getElementById('log_modal_decline_reason').textContent = trx.decline_reason;
+            declineRow.classList.remove('hidden');
+        } else {
+            declineRow.classList.add('hidden');
+        }
+
+        // Action Buttons inside Modal
+        const approveBtn = document.getElementById('log_modal_approve_btn');
+        const declineBtn = document.getElementById('log_modal_decline_btn');
+
+        if (isVerif) {
+            approveBtn.classList.add('hidden');
+            declineBtn.classList.remove('hidden');
+        } else if (isDecl) {
+            approveBtn.classList.remove('hidden');
+            declineBtn.classList.add('hidden');
+        } else {
+            approveBtn.classList.remove('hidden');
+            declineBtn.classList.remove('hidden');
+        }
+
+        document.getElementById('logDetailsModal').classList.remove('hidden');
+    }
+
+    function closeLogDetailsModal() {
+        document.getElementById('logDetailsModal').classList.add('hidden');
+        currentLogTrx = null;
+    }
+
+    function copyLogTrx() {
+        if (!currentLogTrx || !currentLogTrx.transaction_id) return;
+        navigator.clipboard.writeText(currentLogTrx.transaction_id).then(() => {
+            const btn = document.getElementById('log_modal_copy_text');
+            if (btn) {
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = 'Copy TRX'; }, 1500);
+            }
+        });
+    }
+
+    async function approveFromModal() {
+        if (!currentLogTrx) return;
+        await verifyTransaction(currentLogTrx.id, 'approve');
+        currentLogTrx.status = 'verified';
+        openLogDetailsModal(currentLogTrx);
+    }
+
+    async function declineFromModal() {
+        if (!currentLogTrx) return;
+        await verifyTransaction(currentLogTrx.id, 'decline');
+        currentLogTrx.status = 'declined';
+        openLogDetailsModal(currentLogTrx);
+    }
+
+    // Refresh transactions live via JSON API without reloading page
+    async function refreshPakPayTransactions(isManual = false) {
+        const icon = document.getElementById('pakpay_refresh_icon');
+        const lastSynced = document.getElementById('pakpay_last_synced');
+        if (icon) icon.classList.add('animate-spin');
+
+        try {
+            // Try admin route first, then fallback to extensions route
+            let url = '/admin/multibankqr/transactions/api';
+            let res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) {
+                res = await fetch('/extensions/multibankqr/admin/transactions/api', { headers: { 'Accept': 'application/json' } });
+            }
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && Array.isArray(data.transactions)) {
+                    renderTransactionsTable(data.transactions);
+
+                    const badge = document.getElementById('verif_count_badge');
+                    if (badge) badge.textContent = data.transactions.length;
+
+                    if (lastSynced) {
+                        lastSynced.textContent = 'Synced ' + (data.synced_at || new Date().toLocaleTimeString());
+                    }
+
+                    if (isManual) {
+                        showPakPayAlert('Payment verification logs refreshed!', true);
+                    }
+                }
+            }
+        } catch (e) {
+            if (isManual) showPakPayAlert('Could not refresh logs: ' + e.message, false);
+        } finally {
+            if (icon) icon.classList.remove('animate-spin');
+        }
+    }
+
+    function renderTransactionsTable(transactions) {
+        const tbody = document.getElementById('pakpay_trx_tbody');
+        const emptyState = document.getElementById('pakpay_empty_state');
+        const wrapper = document.getElementById('pakpay_table_wrapper');
+        if (!tbody) return;
+
+        if (!transactions || transactions.length === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            if (wrapper) wrapper.classList.add('hidden');
+            return;
+        }
+
+        if (emptyState) emptyState.classList.add('hidden');
+        if (wrapper) wrapper.classList.remove('hidden');
+
+        let rowsHtml = '';
+        let hasNewPayment = false;
+
+        transactions.forEach(trx => {
+            const isNew = !knownTrxIds.has(trx.id);
+            if (isNew) {
+                knownTrxIds.add(trx.id);
+                hasNewPayment = true;
+            }
+
+            const isVerif = ['verified', 'approved', 'paid'].includes(trx.status);
+            const isDecl = ['declined', 'rejected'].includes(trx.status);
+
+            const badgeClass = isVerif
+                ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
+                : (isDecl ? 'bg-red-950 text-red-400 border border-red-800/60' : 'bg-amber-950 text-amber-300 border border-amber-800/60');
+
+            const statusLabel = isVerif ? 'Verified (Paid)' : (isDecl ? 'Declined' : 'Pending Verification');
+            const proofPath = trx.proof_image_path || (trx.proof_image ? '/' + trx.proof_image.replace(/^\//, '') : null);
+
+            rowsHtml += `
+                <tr id="trx-row-${trx.id}" class="hover:bg-slate-800/40 transition ${isNew ? 'bg-emerald-950/40 border border-emerald-500/50' : ''}">
+                    <td class="p-3 font-semibold text-white">#${trx.invoice_id}</td>
+                    <td class="p-3 text-slate-300">${escapeHtml(trx.sender_name || 'Customer')}</td>
+                    <td class="p-3 font-bold text-emerald-400">${escapeHtml(trx.currency)} ${trx.amount_formatted || Number(trx.amount).toFixed(2)}</td>
+                    <td class="p-3 text-slate-300">${escapeHtml(trx.bank_account_name || 'Standard')}</td>
+                    <td class="p-3 font-mono text-slate-200 select-all">${escapeHtml(trx.transaction_id)}</td>
+                    <td class="p-3">
+                        ${proofPath ? `
+                            <button type="button" onclick="previewReceiptImage('${escapeHtml(proofPath)}', 'Invoice #${trx.invoice_id} (${escapeHtml(trx.transaction_id)}')')" class="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded border border-indigo-800/40">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <span>View</span>
+                            </button>
+                        ` : `<span class="text-slate-600 text-[11px]">No Receipt</span>`}
+                    </td>
+                    <td class="p-3">
+                        <span id="trx-status-${trx.id}" class="inline-block px-2 py-0.5 text-[10px] font-bold rounded-md ${badgeClass}">
+                            ${statusLabel}
+                        </span>
+                    </td>
+                    <td class="p-3 text-slate-400 text-[11px] whitespace-nowrap">${trx.created_at || 'Recently'}</td>
+                    <td class="p-3 text-right whitespace-nowrap">
+                        <div class="inline-flex items-center gap-1.5">
+                            <button type="button" onclick='openLogDetailsModal(${JSON.stringify(trx)})' class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded border border-slate-700 transition" title="Inspect Full Payment Verification Log">
+                                <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <span>Log Details</span>
+                            </button>
+                            ${!isVerif ? `
+                                <button type="button" onclick="verifyTransaction(${trx.id}, 'approve')" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition shadow">
+                                    <span>✅ Approve</span>
+                                </button>
+                            ` : ''}
+                            ${!isDecl ? `
+                                <button type="button" onclick="verifyTransaction(${trx.id}, 'decline')" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-red-950/70 hover:bg-red-900 border border-red-700/60 text-red-300 rounded transition">
+                                    <span>❌ Decline</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = rowsHtml;
+
+        if (hasNewPayment) {
+            showPakPayAlert('🔔 New customer payment submission received! Table updated.', true);
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function toggleAutoUpdate(enable) {
+        const ind = document.getElementById('pakpay_live_indicator');
+        const lbl = document.getElementById('pakpay_auto_label');
+
+        if (enable) {
+            if (ind) ind.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+            if (lbl) lbl.textContent = 'Auto-Update (10s)';
+            startAutoUpdate();
+            refreshPakPayTransactions(false);
+        } else {
+            if (ind) ind.className = 'w-2 h-2 rounded-full bg-slate-600';
+            if (lbl) lbl.textContent = 'Auto-Update (Paused)';
+            stopAutoUpdate();
+        }
+    }
+
+    function startAutoUpdate() {
+        stopAutoUpdate();
+        autoUpdateInterval = setInterval(() => {
+            const toggle = document.getElementById('pakpay_auto_refresh_toggle');
+            if (toggle && toggle.checked && !document.hidden) {
+                refreshPakPayTransactions(false);
+            }
+        }, 10000);
+    }
+
+    function stopAutoUpdate() {
+        if (autoUpdateInterval) {
+            clearInterval(autoUpdateInterval);
+            autoUpdateInterval = null;
+        }
+    }
+
+    // Auto-pause polling when tab is hidden, auto-resume when visible
+    document.addEventListener('visibilitychange', () => {
+        const toggle = document.getElementById('pakpay_auto_refresh_toggle');
+        if (!document.hidden && toggle && toggle.checked) {
+            refreshPakPayTransactions(false);
+        }
+    });
+
+    // Initialize auto-update rule on load
+    startAutoUpdate();
 
     function previewReceiptImage(url, title) {
         document.getElementById('receiptPreviewImage').src = url;

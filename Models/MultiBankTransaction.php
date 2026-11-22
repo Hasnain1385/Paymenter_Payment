@@ -42,6 +42,22 @@ class MultiBankTransaction extends Model
         'reviewed_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'proof_image_path',
+    ];
+
+    /**
+     * Get sanitized public path for proof receipt image.
+     */
+    public function getProofImagePathAttribute(): ?string
+    {
+        if (empty($this->proof_image)) {
+            return null;
+        }
+
+        return '/' . ltrim($this->proof_image, '/');
+    }
+
     public function isPendingPayment(): bool
     {
         return $this->status === self::STATUS_PENDING_PAYMENT;
