@@ -62,10 +62,10 @@ It allows merchants to display **scanned static QR codes** of their accounts, pr
 ## 🚀 Installation & Setup
 
 ### Method 1: Upload via Paymenter Admin UI (Recommended)
-1. Download or locate `MultiBankQR.zip`.
+1. Download this repository as a ZIP from GitHub (**Code ➜ Download ZIP**).
 2. Log into your **Paymenter Admin Panel**.
 3. Navigate to **Extensions** ➜ click **Install Extension** (top right).
-4. Drag and drop `MultiBankQR.zip` (or browse to select it).
+4. Drag and drop the downloaded ZIP file (or browse to select it).
 5. Paymenter will automatically extract the files directly to `extensions/Gateways/MultiBankQR` and register the extension.
 
 ---

@@ -2,3 +2,10 @@
 .env
 *.log
 .phpunit.cache
+*.zip
+
+# Ignore uploaded transaction proofs but preserve directory & security configuration
+storage/multibank_proofs/*
+!storage/multibank_proofs/.htaccess
+!storage/multibank_proofs/.gitkeep
+
