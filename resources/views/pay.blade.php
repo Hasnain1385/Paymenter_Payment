@@ -137,6 +137,19 @@
             background-color: var(--mb-card-hover);
         }
 
+        .mb-chevron {
+            width: 16px;
+            height: 16px;
+            color: var(--mb-text-muted);
+            transition: transform 0.25s ease;
+            transform: rotate(0deg);
+            flex-shrink: 0;
+        }
+        .mb-acc-item.is-active .mb-chevron {
+            transform: rotate(180deg) !important;
+            color: #10b981;
+        }
+
         .mb-acc-body {
             display: none;
             padding: 18px;
@@ -224,6 +237,76 @@
         }
     </style>
 
+    <script>
+        // Self-Healing Immediate Definitions for Livewire 3 & DOM Morphing
+        window.mbSelectBank = function(idx) {
+            if (typeof idx === 'object' && idx !== null) {
+                var closest = idx.closest ? idx.closest('.mb-acc-item') : null;
+                if (closest && closest.id) {
+                    idx = parseInt(closest.id.replace('mb-item-', ''), 10);
+                }
+            }
+            var item = document.getElementById('mb-item-' + idx);
+            if (!item) return;
+            var isOpen = item.classList.contains('is-active');
+
+            document.querySelectorAll('.mb-acc-item').forEach(function(el) {
+                el.classList.remove('is-active');
+                var h = el.querySelector('.mb-acc-head');
+                if (h) h.setAttribute('aria-expanded', 'false');
+            });
+
+            if (!isOpen) {
+                item.classList.add('is-active');
+                var head = document.getElementById('mb-head-' + idx);
+                if (head) head.setAttribute('aria-expanded', 'true');
+            }
+        };
+        function mbSelectBank(idx) {
+            window.mbSelectBank(idx);
+        }
+
+        window.mbCopy = function(id, btn) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            var text = el.innerText.trim();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    var old = btn.innerHTML;
+                    btn.innerHTML = '<span style="color:#10b981;font-weight:700;">Copied!</span>';
+                    setTimeout(function() { btn.innerHTML = old; }, 1800);
+                }).catch(function() {
+                    prompt('Copy:', text);
+                });
+            } else {
+                prompt('Copy:', text);
+            }
+        };
+        function mbCopy(id, btn) {
+            window.mbCopy(id, btn);
+        }
+
+        window.mbOpenQr = function(src, title) {
+            var modalImg = document.getElementById('mbQrModalImg');
+            var modalTitle = document.getElementById('mbQrModalTitle');
+            var modal = document.getElementById('mbQrModal');
+            if (modalImg) modalImg.src = src;
+            if (modalTitle) modalTitle.innerText = title;
+            if (modal) modal.style.display = 'flex';
+        };
+        function mbOpenQr(src, title) {
+            window.mbOpenQr(src, title);
+        }
+
+        window.mbCloseQr = function() {
+            var modal = document.getElementById('mbQrModal');
+            if (modal) modal.style.display = 'none';
+        };
+        function mbCloseQr() {
+            window.mbCloseQr();
+        }
+    </script>
+
     <!-- 1. Header Card: Invoice #, Status & Amount -->
     <div class="mb-box">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--mb-border);">
@@ -306,7 +389,24 @@
                     @endphp
                     <div id="mb-item-{{ $loop->index }}" class="mb-acc-item {{ $isActive ? 'is-active' : '' }}">
                         <!-- Accordion Header (Click to Toggle Collapse/Expand) -->
-                        <button type="button" class="mb-acc-head" id="mb-head-{{ $loop->index }}" onclick="mbSelectBank(this)" aria-expanded="{{ $isActive ? 'true' : 'false' }}" title="Click to collapse or expand">
+                        <button type="button" class="mb-acc-head" id="mb-head-{{ $loop->index }}"
+                            onclick="(window.mbSelectBank || function(idx) {
+                                var item = document.getElementById('mb-item-' + idx);
+                                if (!item) return;
+                                var isOpen = item.classList.contains('is-active');
+                                document.querySelectorAll('.mb-acc-item').forEach(function(el) {
+                                    el.classList.remove('is-active');
+                                    var h = el.querySelector('.mb-acc-head');
+                                    if (h) h.setAttribute('aria-expanded', 'false');
+                                });
+                                if (!isOpen) {
+                                    item.classList.add('is-active');
+                                    var head = document.getElementById('mb-head-' + idx);
+                                    if (head) head.setAttribute('aria-expanded', 'true');
+                                }
+                            }).call(this, {{ $loop->index }})"
+                            aria-expanded="{{ $isActive ? 'true' : 'false' }}"
+                            title="Click to collapse or expand">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--mb-chip-bg); border: 1px solid var(--mb-border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #10b981; flex-shrink: 0;">
                                     {{ $loop->iteration }}
@@ -323,11 +423,11 @@
                                 </div>
                             </div>
 
-                            <svg class="mb-chevron" id="mb-chevron-{{ $loop->index }}" style="width: 16px; height: 16px; color: var(--mb-text-muted); transition: transform 0.25s ease; transform: {{ $isActive ? 'rotate(180deg)' : 'rotate(0deg)' }}; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="mb-chevron" id="mb-chevron-{{ $loop->index }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
 
                         <!-- Accordion Content (Left Details, Right QR) -->
-                        <div id="mb-body-{{ $loop->index }}" class="mb-acc-body" style="display: {{ $isActive ? 'block' : 'none' }};">
+                        <div id="mb-body-{{ $loop->index }}" class="mb-acc-body">
                             <div class="mb-acc-grid">
 
                                 <!-- LEFT COLUMN: Details -->
@@ -345,7 +445,18 @@
                                             <span id="mb-acc-num-{{ $loop->index }}" style="font-family: monospace; font-size: 14px; font-weight: 800; color: #10b981; background: var(--mb-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--mb-border); user-select: all;">
                                                 {{ $acc['account_number'] }}
                                             </span>
-                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-acc-num-{{ $loop->index }}', this)">
+                                            <button type="button" class="mb-copy-pill" onclick="(window.mbCopy || function(id, btn) {
+                                                var el = document.getElementById(id);
+                                                if (!el) return;
+                                                var text = el.innerText.trim();
+                                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                                    navigator.clipboard.writeText(text).then(function() {
+                                                        var old = btn.innerHTML;
+                                                        btn.innerHTML = '<span style=\"color:#10b981;font-weight:700;\">Copied!</span>';
+                                                        setTimeout(function() { btn.innerHTML = old; }, 1800);
+                                                    }).catch(function() { prompt('Copy:', text); });
+                                                } else { prompt('Copy:', text); }
+                                            }).call(this, 'mb-acc-num-{{ $loop->index }}', this)">
                                                 <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                                 <span>Copy</span>
                                             </button>
@@ -364,7 +475,18 @@
                                         <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Transfer Remarks / Reference</div>
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <span id="mb-ref-{{ $loop->index }}" style="font-family: monospace; font-size: 12px; font-weight: 700; color: var(--mb-text); background: var(--mb-bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--mb-border); user-select: all;">INV-{{ $invoiceId }}</span>
-                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-ref-{{ $loop->index }}', this)">Copy</button>
+                                            <button type="button" class="mb-copy-pill" onclick="(window.mbCopy || function(id, btn) {
+                                                var el = document.getElementById(id);
+                                                if (!el) return;
+                                                var text = el.innerText.trim();
+                                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                                    navigator.clipboard.writeText(text).then(function() {
+                                                        var old = btn.innerHTML;
+                                                        btn.innerHTML = '<span style=\"color:#10b981;font-weight:700;\">Copied!</span>';
+                                                        setTimeout(function() { btn.innerHTML = old; }, 1800);
+                                                    }).catch(function() { prompt('Copy:', text); });
+                                                } else { prompt('Copy:', text); }
+                                            }).call(this, 'mb-ref-{{ $loop->index }}', this)">Copy</button>
                                         </div>
                                     </div>
 
@@ -378,12 +500,26 @@
                                 <!-- RIGHT COLUMN: Scanned QR Frame -->
                                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
                                     @if(!empty($acc['qr_src']))
-                                        <div onclick="mbOpenQr('{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')"
+                                        <div onclick="(window.mbOpenQr || function(src, title) {
+                                                var modalImg = document.getElementById('mbQrModalImg');
+                                                var modalTitle = document.getElementById('mbQrModalTitle');
+                                                var modal = document.getElementById('mbQrModal');
+                                                if (modalImg) modalImg.src = src;
+                                                if (modalTitle) modalTitle.innerText = title;
+                                                if (modal) modal.style.display = 'flex';
+                                            }).call(this, '{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')"
                                              style="background-color: var(--mb-qr-bg); border: 1px solid var(--mb-qr-border); border-radius: 12px; padding: 10px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                                             <img src="{{ $acc['qr_src'] }}" alt="QR" style="width: 130px; height: 130px; object-fit: contain; display: block; border-radius: 6px;">
                                         </div>
                                         <div style="font-size: 11px; font-weight: 600; color: var(--mb-text-muted); margin-top: 6px; cursor: pointer;"
-                                             onclick="mbOpenQr('{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')">
+                                             onclick="(window.mbOpenQr || function(src, title) {
+                                                var modalImg = document.getElementById('mbQrModalImg');
+                                                var modalTitle = document.getElementById('mbQrModalTitle');
+                                                var modal = document.getElementById('mbQrModal');
+                                                if (modalImg) modalImg.src = src;
+                                                if (modalTitle) modalTitle.innerText = title;
+                                                if (modal) modal.style.display = 'flex';
+                                            }).call(this, '{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')">
                                             Scan to Pay
                                         </div>
                                     @else
@@ -489,11 +625,11 @@
 </div>
 
 <!-- Lightbox Modal for Enlargeable QR Image -->
-<div id="mbQrModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center; padding: 16px;" onclick="mbCloseQr()">
+<div id="mbQrModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center; padding: 16px;" onclick="(window.mbCloseQr || function(){ var m = document.getElementById('mbQrModal'); if(m) m.style.display='none'; })()">
     <div style="background: #ffffff; border-radius: 16px; max-width: 340px; width: 100%; padding: 20px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
         <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; margin-bottom: 14px;">
             <div id="mbQrModalTitle" style="font-size: 14px; font-weight: 700; color: #0f172a;">Bank QR Code</div>
-            <button type="button" onclick="mbCloseQr()" style="background: none; border: none; font-size: 20px; line-height: 1; cursor: pointer; color: #64748b;">&times;</button>
+            <button type="button" onclick="(window.mbCloseQr || function(){ var m = document.getElementById('mbQrModal'); if(m) m.style.display='none'; })()" style="background: none; border: none; font-size: 20px; line-height: 1; cursor: pointer; color: #64748b;">&times;</button>
         </div>
         <div style="background: #ffffff; padding: 10px; border-radius: 10px; display: inline-block;">
             <img id="mbQrModalImg" src="" alt="QR" style="width: 220px; height: 220px; object-fit: contain; display: block;">
@@ -517,42 +653,26 @@
 
     // Toggle Accordion: Clicking an active account collapses it (saving vertical space).
     // Clicking an inactive account expands it and collapses any other open account.
-    window.mbSelectBank = function(target) {
-        let item = null;
-        let head = null;
-
-        if (typeof target === 'number' || (typeof target === 'string' && !isNaN(target))) {
-            item = document.getElementById('mb-item-' + target);
-            head = document.getElementById('mb-head-' + target);
-        } else if (target && (target.nodeType || target.closest)) {
-            head = (target.classList && target.classList.contains('mb-acc-head')) ? target : (target.closest ? target.closest('.mb-acc-head') : null);
-            item = target.closest ? target.closest('.mb-acc-item') : null;
+    window.mbSelectBank = function(idx) {
+        if (typeof idx === 'object' && idx !== null) {
+            var closest = idx.closest ? idx.closest('.mb-acc-item') : null;
+            if (closest && closest.id) {
+                idx = parseInt(closest.id.replace('mb-item-', ''), 10);
+            }
         }
-
+        var item = document.getElementById('mb-item-' + idx);
         if (!item) return;
+        var isOpen = item.classList.contains('is-active');
 
-        const body = item.querySelector('.mb-acc-body');
-        const chevron = item.querySelector('.mb-chevron') || item.querySelector('svg');
-        const wasActive = item.classList.contains('is-active');
-
-        // Collapse all accounts first
-        const allItems = document.querySelectorAll('.mb-acc-item');
-        allItems.forEach(function(otherItem) {
-            otherItem.classList.remove('is-active');
-            const otherBody = otherItem.querySelector('.mb-acc-body');
-            const otherChevron = otherItem.querySelector('.mb-chevron') || otherItem.querySelector('svg');
-            const otherHead = otherItem.querySelector('.mb-acc-head');
-            if (otherBody) otherBody.style.display = 'none';
-            if (otherChevron) otherChevron.style.transform = 'rotate(0deg)';
-            if (otherHead) otherHead.setAttribute('aria-expanded', 'false');
+        document.querySelectorAll('.mb-acc-item').forEach(function(el) {
+            el.classList.remove('is-active');
+            var h = el.querySelector('.mb-acc-head');
+            if (h) h.setAttribute('aria-expanded', 'false');
         });
 
-        // If it was NOT active before, expand it now.
-        // If it was already active, it remains collapsed!
-        if (!wasActive) {
+        if (!isOpen) {
             item.classList.add('is-active');
-            if (body) body.style.display = 'block';
-            if (chevron) chevron.style.transform = 'rotate(180deg)';
+            var head = document.getElementById('mb-head-' + idx);
             if (head) head.setAttribute('aria-expanded', 'true');
         }
     };
