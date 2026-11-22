@@ -550,9 +550,34 @@
             currentTrxLog = null;
         }
 
+        function copyToClipboard(text, onSuccess) {
+            if (!text) return;
+            const fallback = () => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    if (onSuccess) onSuccess();
+                } catch (e) {
+                    prompt('Copy text:', text);
+                }
+            };
+            if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onSuccess).catch(fallback);
+            } else {
+                fallback();
+            }
+        }
+
         function copyTrxLogModalId() {
             if (!currentTrxLog || !currentTrxLog.transaction_id) return;
-            navigator.clipboard.writeText(currentTrxLog.transaction_id).then(() => {
+            copyToClipboard(currentTrxLog.transaction_id, () => {
                 const btn = document.getElementById('trx_log_modal_copy_text');
                 if (btn) {
                     btn.textContent = 'Copied!';
@@ -778,8 +803,10 @@
         }
 
         function copyTrx(id, btn) {
-            const text = document.getElementById(id).innerText.trim();
-            navigator.clipboard.writeText(text).then(() => {
+            const el = document.getElementById(id);
+            const text = el ? (el.innerText || el.textContent || '').trim() : id;
+            if (!text) return;
+            copyToClipboard(text, () => {
                 const orig = btn.innerHTML;
                 btn.innerHTML = `<span class="text-[10px] text-emerald-400 font-bold">✓</span>`;
                 setTimeout(() => { btn.innerHTML = orig; }, 1500);

@@ -906,13 +906,35 @@
 
     function copyLogTrx() {
         if (!currentLogTrx || !currentLogTrx.transaction_id) return;
-        navigator.clipboard.writeText(currentLogTrx.transaction_id).then(() => {
+        const text = currentLogTrx.transaction_id;
+        const success = () => {
             const btn = document.getElementById('log_modal_copy_text');
             if (btn) {
                 btn.textContent = 'Copied!';
                 setTimeout(() => { btn.textContent = 'Copy TRX'; }, 1500);
             }
-        });
+        };
+        const fallback = () => {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                success();
+            } catch (e) {
+                prompt('Copy TRX:', text);
+            }
+        };
+        if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(success).catch(fallback);
+        } else {
+            fallback();
+        }
     }
 
     async function approveFromModal() {

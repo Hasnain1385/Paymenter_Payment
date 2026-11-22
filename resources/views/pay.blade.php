@@ -266,36 +266,81 @@
             window.mbSelectBank(idx);
         }
 
-        window.mbCopy = function(id, btn) {
-            var el = document.getElementById(id);
-            if (!el) return;
-            var text = el.innerText.trim();
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(function() {
-                    var old = btn.innerHTML;
-                    btn.innerHTML = '<span style="color:#10b981;font-weight:700;">Copied!</span>';
-                    setTimeout(function() { btn.innerHTML = old; }, 1800);
-                }).catch(function() {
-                    prompt('Copy:', text);
+        window.mbCopy = function(idOrText, btn) {
+            var el = (typeof idOrText === 'string') ? document.getElementById(idOrText) : idOrText;
+            var text = el ? (el.innerText || el.textContent || '').trim() : (typeof idOrText === 'string' ? idOrText.trim() : '');
+            if (!text) return;
+
+            var notify = function() {
+                if (!btn) return;
+                var s = btn.querySelector ? btn.querySelector('span') : null;
+                var targetEl = s || btn;
+                var origText = targetEl.getAttribute('data-txt') || targetEl.innerText;
+                targetEl.setAttribute('data-txt', origText);
+                targetEl.innerText = 'Copied!';
+                if (btn.style) {
+                    btn.style.borderColor = '#10b981';
+                    btn.style.color = '#10b981';
+                }
+                setTimeout(function() {
+                    targetEl.innerText = origText;
+                    if (btn.style) {
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                    }
+                }, 1500);
+            };
+
+            var fallback = function(val) {
+                try {
+                    var ta = document.createElement('textarea');
+                    ta.value = val;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.top = '-9999px';
+                    ta.style.left = '-9999px';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    ta.setSelectionRange(0, 99999);
+                    var success = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    if (success) {
+                        notify();
+                        return;
+                    }
+                } catch (err) {}
+                try { prompt('Copy text: Ctrl+C, Enter', val); } catch (e) {}
+            };
+
+            if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(notify).catch(function() {
+                    fallback(text);
                 });
             } else {
-                prompt('Copy:', text);
+                fallback(text);
             }
         };
-        function mbCopy(id, btn) {
-            window.mbCopy(id, btn);
+        function mbCopy(idOrText, btn) {
+            window.mbCopy(idOrText, btn);
         }
 
-        window.mbOpenQr = function(src, title) {
+        window.mbOpenQr = function(srcOrEl, title) {
+            var src = srcOrEl;
+            if (srcOrEl && srcOrEl.getAttribute) {
+                src = srcOrEl.getAttribute('data-qr-src') || src;
+                title = srcOrEl.getAttribute('data-qr-title') || title;
+            }
             var modalImg = document.getElementById('mbQrModalImg');
             var modalTitle = document.getElementById('mbQrModalTitle');
             var modal = document.getElementById('mbQrModal');
-            if (modalImg) modalImg.src = src;
-            if (modalTitle) modalTitle.innerText = title;
+            if (modalImg && src) modalImg.src = src;
+            if (modalTitle && title) modalTitle.innerText = title;
             if (modal) modal.style.display = 'flex';
         };
-        function mbOpenQr(src, title) {
-            window.mbOpenQr(src, title);
+        function mbOpenQr(srcOrEl, title) {
+            window.mbOpenQr(srcOrEl, title);
         }
 
         window.mbCloseQr = function() {
@@ -442,21 +487,14 @@
                                     <div>
                                         <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Account Number / IBAN / Raast ID</div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <span id="mb-acc-num-{{ $loop->index }}" style="font-family: monospace; font-size: 14px; font-weight: 800; color: #10b981; background: var(--mb-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--mb-border); user-select: all;">
+                                            <span id="mb-acc-num-{{ $loop->index }}"
+                                                  onclick="(window.mbCopy = window.mbCopy || function(id, btn) { var el = document.getElementById(id); var t = el ? (el.innerText || el.textContent || '').trim() : id; if (!t) return; var cb = function() { if (!btn) return; var s = btn.querySelector('span') || btn; var orig = s.getAttribute('data-txt') || s.innerText; s.setAttribute('data-txt', orig); s.innerText = 'Copied!'; btn.style.borderColor = '#10b981'; btn.style.color = '#10b981'; setTimeout(function() { s.innerText = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 1500); }; if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(cb).catch(function() { fb(t); }); } else { fb(t); } function fb(val) { try { var ta = document.createElement('textarea'); ta.value = val; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); cb(); } catch(e) {} } })('mb-acc-num-{{ $loop->index }}', document.getElementById('mb-copy-acc-{{ $loop->index }}'))"
+                                                  title="Click to copy account number"
+                                                  style="font-family: monospace; font-size: 14px; font-weight: 800; color: #10b981; background: var(--mb-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--mb-border); user-select: all; cursor: pointer;">
                                                 {{ $acc['account_number'] }}
                                             </span>
-                                            <button type="button" class="mb-copy-pill" onclick="(window.mbCopy || function(id, btn) {
-                                                var el = document.getElementById(id);
-                                                if (!el) return;
-                                                var text = el.innerText.trim();
-                                                if (navigator.clipboard && navigator.clipboard.writeText) {
-                                                    navigator.clipboard.writeText(text).then(function() {
-                                                        var old = btn.innerHTML;
-                                                        btn.innerHTML = '<span style=\"color:#10b981;font-weight:700;\">Copied!</span>';
-                                                        setTimeout(function() { btn.innerHTML = old; }, 1800);
-                                                    }).catch(function() { prompt('Copy:', text); });
-                                                } else { prompt('Copy:', text); }
-                                            }).call(this, 'mb-acc-num-{{ $loop->index }}', this)">
+                                            <button type="button" id="mb-copy-acc-{{ $loop->index }}" class="mb-copy-pill" title="Copy account number"
+                                                onclick="(window.mbCopy = window.mbCopy || function(id, btn) { var el = document.getElementById(id); var t = el ? (el.innerText || el.textContent || '').trim() : id; if (!t) return; var cb = function() { if (!btn) return; var s = btn.querySelector('span') || btn; var orig = s.getAttribute('data-txt') || s.innerText; s.setAttribute('data-txt', orig); s.innerText = 'Copied!'; btn.style.borderColor = '#10b981'; btn.style.color = '#10b981'; setTimeout(function() { s.innerText = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 1500); }; if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(cb).catch(function() { fb(t); }); } else { fb(t); } function fb(val) { try { var ta = document.createElement('textarea'); ta.value = val; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); cb(); } catch(e) {} } })('mb-acc-num-{{ $loop->index }}', this)">
                                                 <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                                 <span>Copy</span>
                                             </button>
@@ -474,19 +512,15 @@
                                     <div>
                                         <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Transfer Remarks / Reference</div>
                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span id="mb-ref-{{ $loop->index }}" style="font-family: monospace; font-size: 12px; font-weight: 700; color: var(--mb-text); background: var(--mb-bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--mb-border); user-select: all;">INV-{{ $invoiceId }}</span>
-                                            <button type="button" class="mb-copy-pill" onclick="(window.mbCopy || function(id, btn) {
-                                                var el = document.getElementById(id);
-                                                if (!el) return;
-                                                var text = el.innerText.trim();
-                                                if (navigator.clipboard && navigator.clipboard.writeText) {
-                                                    navigator.clipboard.writeText(text).then(function() {
-                                                        var old = btn.innerHTML;
-                                                        btn.innerHTML = '<span style=\"color:#10b981;font-weight:700;\">Copied!</span>';
-                                                        setTimeout(function() { btn.innerHTML = old; }, 1800);
-                                                    }).catch(function() { prompt('Copy:', text); });
-                                                } else { prompt('Copy:', text); }
-                                            }).call(this, 'mb-ref-{{ $loop->index }}', this)">Copy</button>
+                                            <span id="mb-ref-{{ $loop->index }}"
+                                                  onclick="(window.mbCopy = window.mbCopy || function(id, btn) { var el = document.getElementById(id); var t = el ? (el.innerText || el.textContent || '').trim() : id; if (!t) return; var cb = function() { if (!btn) return; var s = btn.querySelector('span') || btn; var orig = s.getAttribute('data-txt') || s.innerText; s.setAttribute('data-txt', orig); s.innerText = 'Copied!'; btn.style.borderColor = '#10b981'; btn.style.color = '#10b981'; setTimeout(function() { s.innerText = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 1500); }; if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(cb).catch(function() { fb(t); }); } else { fb(t); } function fb(val) { try { var ta = document.createElement('textarea'); ta.value = val; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); cb(); } catch(e) {} } })('mb-ref-{{ $loop->index }}', document.getElementById('mb-copy-ref-{{ $loop->index }}'))"
+                                                  title="Click to copy transfer remarks"
+                                                  style="font-family: monospace; font-size: 12px; font-weight: 700; color: var(--mb-text); background: var(--mb-bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--mb-border); user-select: all; cursor: pointer;">INV-{{ $invoiceId }}</span>
+                                            <button type="button" id="mb-copy-ref-{{ $loop->index }}" class="mb-copy-pill" title="Copy transfer remarks"
+                                                onclick="(window.mbCopy = window.mbCopy || function(id, btn) { var el = document.getElementById(id); var t = el ? (el.innerText || el.textContent || '').trim() : id; if (!t) return; var cb = function() { if (!btn) return; var s = btn.querySelector('span') || btn; var orig = s.getAttribute('data-txt') || s.innerText; s.setAttribute('data-txt', orig); s.innerText = 'Copied!'; btn.style.borderColor = '#10b981'; btn.style.color = '#10b981'; setTimeout(function() { s.innerText = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 1500); }; if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(cb).catch(function() { fb(t); }); } else { fb(t); } function fb(val) { try { var ta = document.createElement('textarea'); ta.value = val; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); cb(); } catch(e) {} } })('mb-ref-{{ $loop->index }}', this)">
+                                                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                                <span>Copy</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -500,26 +534,17 @@
                                 <!-- RIGHT COLUMN: Scanned QR Frame -->
                                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
                                     @if(!empty($acc['qr_src']))
-                                        <div onclick="(window.mbOpenQr || function(src, title) {
-                                                var modalImg = document.getElementById('mbQrModalImg');
-                                                var modalTitle = document.getElementById('mbQrModalTitle');
-                                                var modal = document.getElementById('mbQrModal');
-                                                if (modalImg) modalImg.src = src;
-                                                if (modalTitle) modalTitle.innerText = title;
-                                                if (modal) modal.style.display = 'flex';
-                                            }).call(this, '{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')"
+                                        <div class="mb-qr-box"
+                                             data-qr-src="{{ $acc['qr_src'] }}"
+                                             data-qr-title="{{ htmlspecialchars($acc['name'], ENT_QUOTES, 'UTF-8') }}"
+                                             onclick="(window.mbOpenQr = window.mbOpenQr || function(btn) { var src = btn.getAttribute('data-qr-src'); var title = btn.getAttribute('data-qr-title'); var mI = document.getElementById('mbQrModalImg'); var mT = document.getElementById('mbQrModalTitle'); var m = document.getElementById('mbQrModal'); if(mI) mI.src = src; if(mT) mT.innerText = title; if(m) m.style.display = 'flex'; })(this)"
                                              style="background-color: var(--mb-qr-bg); border: 1px solid var(--mb-qr-border); border-radius: 12px; padding: 10px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                                             <img src="{{ $acc['qr_src'] }}" alt="QR" style="width: 130px; height: 130px; object-fit: contain; display: block; border-radius: 6px;">
                                         </div>
                                         <div style="font-size: 11px; font-weight: 600; color: var(--mb-text-muted); margin-top: 6px; cursor: pointer;"
-                                             onclick="(window.mbOpenQr || function(src, title) {
-                                                var modalImg = document.getElementById('mbQrModalImg');
-                                                var modalTitle = document.getElementById('mbQrModalTitle');
-                                                var modal = document.getElementById('mbQrModal');
-                                                if (modalImg) modalImg.src = src;
-                                                if (modalTitle) modalTitle.innerText = title;
-                                                if (modal) modal.style.display = 'flex';
-                                            }).call(this, '{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')">
+                                             data-qr-src="{{ $acc['qr_src'] }}"
+                                             data-qr-title="{{ htmlspecialchars($acc['name'], ENT_QUOTES, 'UTF-8') }}"
+                                             onclick="(window.mbOpenQr = window.mbOpenQr || function(btn) { var src = btn.getAttribute('data-qr-src'); var title = btn.getAttribute('data-qr-title'); var mI = document.getElementById('mbQrModalImg'); var mT = document.getElementById('mbQrModalTitle'); var m = document.getElementById('mbQrModal'); if(mI) mI.src = src; if(mT) mT.innerText = title; if(m) m.style.display = 'flex'; })(this)">
                                             Scan to Pay
                                         </div>
                                     @else
@@ -639,57 +664,23 @@
 </div>
 
 <script>
-    // 1-Click Copy with Feedback
+    // 1-Click Copy with Feedback & Secure Fallback
     function mbCopy(id, btn) {
-        const text = document.getElementById(id).innerText.trim();
-        navigator.clipboard.writeText(text).then(() => {
-            const old = btn.innerHTML;
-            btn.innerHTML = `<span style="color:#10b981;font-weight:700;">Copied!</span>`;
-            setTimeout(() => { btn.innerHTML = old; }, 1800);
-        }).catch(() => {
-            alert('Copied: ' + text);
-        });
+        if (window.mbCopy) {
+            window.mbCopy(id, btn);
+        }
     }
 
-    // Toggle Accordion: Clicking an active account collapses it (saving vertical space).
-    // Clicking an inactive account expands it and collapses any other open account.
-    window.mbSelectBank = function(idx) {
-        if (typeof idx === 'object' && idx !== null) {
-            var closest = idx.closest ? idx.closest('.mb-acc-item') : null;
-            if (closest && closest.id) {
-                idx = parseInt(closest.id.replace('mb-item-', ''), 10);
-            }
+    function mbOpenQr(srcOrEl, title) {
+        if (window.mbOpenQr) {
+            window.mbOpenQr(srcOrEl, title);
         }
-        var item = document.getElementById('mb-item-' + idx);
-        if (!item) return;
-        var isOpen = item.classList.contains('is-active');
-
-        document.querySelectorAll('.mb-acc-item').forEach(function(el) {
-            el.classList.remove('is-active');
-            var h = el.querySelector('.mb-acc-head');
-            if (h) h.setAttribute('aria-expanded', 'false');
-        });
-
-        if (!isOpen) {
-            item.classList.add('is-active');
-            var head = document.getElementById('mb-head-' + idx);
-            if (head) head.setAttribute('aria-expanded', 'true');
-        }
-    };
-    function mbSelectBank(target) {
-        window.mbSelectBank(target);
-    }
-
-    // Lightbox QR Zoom
-    function mbOpenQr(src, title) {
-        document.getElementById('mbQrModalImg').src = src;
-        document.getElementById('mbQrModalTitle').innerText = title;
-        const modal = document.getElementById('mbQrModal');
-        modal.style.display = 'flex';
     }
 
     function mbCloseQr() {
-        document.getElementById('mbQrModal').style.display = 'none';
+        if (window.mbCloseQr) {
+            window.mbCloseQr();
+        }
     }
 
     // Real-Time Background Status Polling

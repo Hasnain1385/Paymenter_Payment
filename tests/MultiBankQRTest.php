@@ -120,8 +120,8 @@ class MultiBankQRTest
         assert(!in_array('pakpay_hub_notice', $fieldNames), "getConfig removes raw HTML pakpay_hub_notice placeholder");
         assert(!in_array('acc1_name', $fieldNames), "getConfig removes old acc1 clutter field");
         assert(!in_array('acc4_currency', $fieldNames), "getConfig removes old acc4 clutter field");
-        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.3.8', "Version bumped to 1.3.8");
-        echo "✓ Gateway Setup Decluttered: 5 clean fields, zero raw HTML placeholders, v1.3.8\n";
+        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.3.9', "Version bumped to 1.3.9");
+        echo "✓ Gateway Setup Decluttered: 5 clean fields, zero raw HTML placeholders, v1.3.9\n";
 
         // 9. Raw QR Payload with tokens
         $rawPayload = "00020101021132480016A0000007270401145204541153035865404{amount}5802PK5914Merchant Title6006Lahore62170113INV-{invoice_id}6304";
@@ -165,8 +165,21 @@ class MultiBankQRTest
         assert(str_contains($payBlade, 'window.mbSelectBank = function(idx)'), "pay.blade.php contains immediate script definition");
         echo "✓ Bank Accordion Collapse/Expand (Livewire 3 innerHTML Safe, Pure Class Toggle)\n";
 
+        // 13. Copy Button Reliability (Zero attribute truncation, robust fallback)
+        assert(!preg_join_contains_onclick_broken_quotes($payBlade), "pay.blade.php contains zero broken double quotes in onclick attributes");
+        assert(str_contains($payBlade, 'window.mbCopy = window.mbCopy || function'), "pay.blade.php contains self-healing inline mbCopy definition");
+        assert(str_contains($payBlade, 'document.execCommand(\'copy\')'), "pay.blade.php contains universal execCommand copy fallback");
+        assert(str_contains($payBlade, 'mb-copy-acc-'), "pay.blade.php has dedicated id for account copy pill");
+        assert(str_contains($payBlade, 'mb-copy-ref-'), "pay.blade.php has dedicated id for reference copy pill");
+        echo "✓ 1-Click Copy Buttons (Universal Clipboard API + execCommand Fallback, Zero DOM Truncation)\n";
+
         echo "\n🎉 All Pakistani & Security tests passed successfully!\n";
     }
+}
+
+function preg_join_contains_onclick_broken_quotes(string $html): bool {
+    // Check if any onclick="..." contains a literal \" that terminates the HTML attribute prematurely
+    return (bool) preg_match('/onclick="[^"]*\\\\"[^"]*"/', $html);
 }
 
 MultiBankQRTest::run();
