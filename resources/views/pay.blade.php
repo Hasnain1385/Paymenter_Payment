@@ -149,7 +149,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .mb-acc-item.is-active .mb-acc-body {
-            display: block;
+            display: block !important;
         }
 
         .mb-acc-grid {
@@ -300,16 +300,16 @@
             </div>
         @else
             <div id="mbAccordion">
-                @foreach($accounts as $index => $acc)
+                @foreach($accounts as $acc)
                     @php
-                        $isActive = ($index === 0);
+                        $isActive = $loop->first;
                     @endphp
-                    <div id="mb-item-{{ $index }}" class="mb-acc-item {{ $isActive ? 'is-active' : '' }}">
+                    <div id="mb-item-{{ $loop->index }}" class="mb-acc-item {{ $isActive ? 'is-active' : '' }}">
                         <!-- Accordion Header (Click to Toggle Collapse/Expand) -->
-                        <button type="button" class="mb-acc-head" id="mb-head-{{ $index }}" onclick="mbSelectBank({{ $index }})" aria-expanded="{{ $isActive ? 'true' : 'false' }}" title="Click to collapse or expand">
+                        <button type="button" class="mb-acc-head" id="mb-head-{{ $loop->index }}" onclick="mbSelectBank(this)" aria-expanded="{{ $isActive ? 'true' : 'false' }}" title="Click to collapse or expand">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--mb-chip-bg); border: 1px solid var(--mb-border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #10b981; shrink: 0;">
-                                    {{ $index + 1 }}
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--mb-chip-bg); border: 1px solid var(--mb-border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #10b981; flex-shrink: 0;">
+                                    {{ $loop->iteration }}
                                 </div>
                                 <div>
                                     <div style="font-size: 14px; font-weight: 700; color: var(--mb-text);">
@@ -323,11 +323,11 @@
                                 </div>
                             </div>
 
-                            <svg id="mb-chevron-{{ $index }}" style="width: 16px; height: 16px; color: var(--mb-text-muted); transition: transform 0.25s ease; transform: {{ $isActive ? 'rotate(180deg)' : 'rotate(0deg)' }};" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="mb-chevron" id="mb-chevron-{{ $loop->index }}" style="width: 16px; height: 16px; color: var(--mb-text-muted); transition: transform 0.25s ease; transform: {{ $isActive ? 'rotate(180deg)' : 'rotate(0deg)' }}; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
 
                         <!-- Accordion Content (Left Details, Right QR) -->
-                        <div id="mb-body-{{ $index }}" class="mb-acc-body">
+                        <div id="mb-body-{{ $loop->index }}" class="mb-acc-body" style="display: {{ $isActive ? 'block' : 'none' }};">
                             <div class="mb-acc-grid">
 
                                 <!-- LEFT COLUMN: Details -->
@@ -342,10 +342,10 @@
                                     <div>
                                         <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Account Number / IBAN / Raast ID</div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <span id="mb-acc-num-{{ $index }}" style="font-family: monospace; font-size: 14px; font-weight: 800; color: #10b981; background: var(--mb-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--mb-border); user-select: all;">
+                                            <span id="mb-acc-num-{{ $loop->index }}" style="font-family: monospace; font-size: 14px; font-weight: 800; color: #10b981; background: var(--mb-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--mb-border); user-select: all;">
                                                 {{ $acc['account_number'] }}
                                             </span>
-                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-acc-num-{{ $index }}', this)">
+                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-acc-num-{{ $loop->index }}', this)">
                                                 <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                                 <span>Copy</span>
                                             </button>
@@ -363,8 +363,8 @@
                                     <div>
                                         <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Transfer Remarks / Reference</div>
                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span id="mb-ref-{{ $index }}" style="font-family: monospace; font-size: 12px; font-weight: 700; color: var(--mb-text); background: var(--mb-bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--mb-border); user-select: all;">INV-{{ $invoiceId }}</span>
-                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-ref-{{ $index }}', this)">Copy</button>
+                                            <span id="mb-ref-{{ $loop->index }}" style="font-family: monospace; font-size: 12px; font-weight: 700; color: var(--mb-text); background: var(--mb-bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--mb-border); user-select: all;">INV-{{ $invoiceId }}</span>
+                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-ref-{{ $loop->index }}', this)">Copy</button>
                                         </div>
                                     </div>
 
@@ -517,32 +517,47 @@
 
     // Toggle Accordion: Clicking an active account collapses it (saving vertical space).
     // Clicking an inactive account expands it and collapses any other open account.
-    function mbSelectBank(index) {
-        const targetItem = document.getElementById(`mb-item-${index}`);
-        const targetChevron = document.getElementById(`mb-chevron-${index}`);
-        const targetHead = document.getElementById(`mb-head-${index}`);
-        if (!targetItem) return;
+    window.mbSelectBank = function(target) {
+        let item = null;
+        let head = null;
 
-        const isCurrentlyActive = targetItem.classList.contains('is-active');
-        const total = {{ count($accounts ?? []) }};
-
-        // Collapse all accounts
-        for (let i = 0; i < total; i++) {
-            const item = document.getElementById(`mb-item-${i}`);
-            const chevron = document.getElementById(`mb-chevron-${i}`);
-            const head = document.getElementById(`mb-head-${i}`);
-            if (item) item.classList.remove('is-active');
-            if (chevron) chevron.style.transform = 'rotate(0deg)';
-            if (head) head.setAttribute('aria-expanded', 'false');
+        if (typeof target === 'number' || (typeof target === 'string' && !isNaN(target))) {
+            item = document.getElementById('mb-item-' + target);
+            head = document.getElementById('mb-head-' + target);
+        } else if (target && (target.nodeType || target.closest)) {
+            head = (target.classList && target.classList.contains('mb-acc-head')) ? target : (target.closest ? target.closest('.mb-acc-head') : null);
+            item = target.closest ? target.closest('.mb-acc-item') : null;
         }
+
+        if (!item) return;
+
+        const body = item.querySelector('.mb-acc-body');
+        const chevron = item.querySelector('.mb-chevron') || item.querySelector('svg');
+        const wasActive = item.classList.contains('is-active');
+
+        // Collapse all accounts first
+        const allItems = document.querySelectorAll('.mb-acc-item');
+        allItems.forEach(function(otherItem) {
+            otherItem.classList.remove('is-active');
+            const otherBody = otherItem.querySelector('.mb-acc-body');
+            const otherChevron = otherItem.querySelector('.mb-chevron') || otherItem.querySelector('svg');
+            const otherHead = otherItem.querySelector('.mb-acc-head');
+            if (otherBody) otherBody.style.display = 'none';
+            if (otherChevron) otherChevron.style.transform = 'rotate(0deg)';
+            if (otherHead) otherHead.setAttribute('aria-expanded', 'false');
+        });
 
         // If it was NOT active before, expand it now.
         // If it was already active, it remains collapsed!
-        if (!isCurrentlyActive) {
-            targetItem.classList.add('is-active');
-            if (targetChevron) targetChevron.style.transform = 'rotate(180deg)';
-            if (targetHead) targetHead.setAttribute('aria-expanded', 'true');
+        if (!wasActive) {
+            item.classList.add('is-active');
+            if (body) body.style.display = 'block';
+            if (chevron) chevron.style.transform = 'rotate(180deg)';
+            if (head) head.setAttribute('aria-expanded', 'true');
         }
+    };
+    function mbSelectBank(target) {
+        window.mbSelectBank(target);
     }
 
     // Lightbox QR Zoom

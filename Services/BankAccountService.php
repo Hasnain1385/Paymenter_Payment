@@ -73,11 +73,15 @@ class BankAccountService
                 if ($dbAccounts->count() > 0) {
                     foreach ($dbAccounts as $acc) {
                         if ($acc->matchesCurrency($currency)) {
+                            $hasCustomPayload = !empty($acc->qr_payload);
+                            $payload = $hasCustomPayload ? $acc->qr_payload : $acc->account_number;
+                            // If user explicitly provided a raw payload, prioritize dynamic generation
+                            $imageUrl = $hasCustomPayload ? null : $acc->qr_image_url;
                             $qr = QrCodeService::generate(
-                                $acc->qr_payload ?: $acc->account_number,
+                                $payload,
                                 $amount,
                                 $invoiceId,
-                                $acc->qr_image_url
+                                $imageUrl
                             );
 
                             $accounts[] = [

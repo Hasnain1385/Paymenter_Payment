@@ -154,9 +154,22 @@
                                 </div>
                             </div>
 
+                            <!-- Raw QR Payload Preview -->
+                            @if($acc->qr_payload)
+                                <div class="mt-2.5 flex items-center gap-2 p-2 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-xs">
+                                    <div class="p-1 rounded bg-emerald-900/60 text-emerald-400 shrink-0">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                                    </div>
+                                    <div class="overflow-hidden min-w-0 flex-1">
+                                        <span class="text-[10px] uppercase text-emerald-400 font-bold block">Raw QR Payload</span>
+                                        <span class="text-[11px] font-mono text-slate-300 truncate block select-all" title="{{ $acc->qr_payload }}">{{ $acc->qr_payload }}</span>
+                                    </div>
+                                </div>
+                            @endif
+
                             <!-- Scanned QR Preview -->
                             @if($acc->qr_image_url)
-                                <div class="mt-3 flex items-center gap-2 p-2 rounded-lg bg-slate-950/40 border border-slate-800/60">
+                                <div class="mt-2.5 flex items-center gap-2 p-2 rounded-lg bg-slate-950/40 border border-slate-800/60">
                                     <img src="{{ $acc->qr_image_url }}" alt="QR" class="w-10 h-10 object-contain rounded bg-white p-0.5" onerror="this.src='https://placehold.co/40x40?text=QR'">
                                     <div class="overflow-hidden">
                                         <span class="text-[10px] uppercase text-slate-500 font-bold block">Scanned QR Attached</span>
@@ -235,6 +248,12 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Raw QR Code Payload (Dynamic Raast / UPI / Payment URI)</label>
+                    <textarea name="qr_payload" rows="2" placeholder="e.g. 000201010211... or upi://pay?pa=acc@bank&pn=Merchant&am={amount} (supports {amount} and {invoice_id} tokens)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"></textarea>
+                    <p class="text-[11px] text-slate-500 mt-1">Provide raw QR payload text to generate dynamic vector QR code. Tokens supported: <code class="text-emerald-400 font-mono">{amount}</code> and <code class="text-emerald-400 font-mono">{invoice_id}</code>.</p>
+                </div>
+
+                <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Scanned Static QR Code Image (URL or File)</label>
                     <div class="space-y-2">
                         <input type="text" name="qr_image_url" placeholder="https://example.com/meezan_qr.png or storage/..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
@@ -310,6 +329,12 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Raw QR Code Payload (Dynamic Raast / UPI / Payment URI)</label>
+                    <textarea id="edit_qr_payload" name="qr_payload" rows="2" placeholder="e.g. 000201010211... or upi://pay?pa=acc@bank&pn=Merchant&am={amount} (supports {amount} and {invoice_id} tokens)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"></textarea>
+                    <p class="text-[11px] text-slate-500 mt-1">Provide raw QR payload text to generate dynamic vector QR code. Tokens supported: <code class="text-indigo-400 font-mono">{amount}</code> and <code class="text-indigo-400 font-mono">{invoice_id}</code>.</p>
+                </div>
+
+                <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Scanned Static QR Code Image (URL or File)</label>
                     <div class="space-y-2">
                         <input type="text" id="edit_qr_image_url" name="qr_image_url" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
@@ -373,6 +398,7 @@
             document.getElementById('edit_routing_code').value = account.routing_code || '';
             document.getElementById('edit_currency').value = account.currency || 'PKR';
             document.getElementById('edit_sort_order').value = account.sort_order || 0;
+            document.getElementById('edit_qr_payload').value = account.qr_payload || '';
             document.getElementById('edit_qr_image_url').value = account.qr_image_url || '';
             document.getElementById('edit_instructions').value = account.instructions || '';
             document.getElementById('edit_is_active').checked = !!account.is_active;
