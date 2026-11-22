@@ -61,31 +61,43 @@ It allows merchants to display **scanned static QR codes** of their accounts, pr
 
 ## 🚀 Installation & Setup
 
-### 1. Copy to Paymenter Extensions
-Copy this extension folder to your Paymenter root directory under `extensions/Gateways/MultiBankQR`:
+### Method 1: Upload via Paymenter Admin UI (Recommended)
+1. Download or locate `MultiBankQR.zip`.
+2. Log into your **Paymenter Admin Panel**.
+3. Navigate to **Extensions** ➜ click **Install Extension** (top right).
+4. Drag and drop `MultiBankQR.zip` (or browse to select it).
+5. Paymenter will automatically extract the files directly to `extensions/Gateways/MultiBankQR` and register the extension.
+
+---
+
+### Method 2: Manual Installation via Terminal
+1. Clone or copy this repository into your Paymenter root directory under `extensions/Gateways/MultiBankQR`:
 
 ```bash
-cp -r /home/nain/projects/Paymenter_Payment /var/www/paymenter/extensions/Gateways/MultiBankQR
+mkdir -p /var/www/paymenter/extensions/Gateways/MultiBankQR
+cp -r ./* /var/www/paymenter/extensions/Gateways/MultiBankQR/
 ```
 
-### 2. Permissions
+2. Set file permissions:
 ```bash
 cd /var/www/paymenter
 chmod -R 775 extensions/Gateways/MultiBankQR storage
 chown -R www-data:www-data extensions/Gateways/MultiBankQR storage
 ```
 
-### 3. Clear Caches
+3. Clear Caches & optimize:
 ```bash
 php artisan optimize:clear
 composer dump-autoload -o
 ```
 
-### 4. Admin Configuration
+---
+
+### ⚙️ Admin Configuration
 1. Log into your **Paymenter Admin Panel**.
 2. Go to **Extensions ➜ Gateways** ➜ find **PakBank QR & Manual Verification** ➜ click **Enable**.
 3. Fill in your details:
-   * **WhatsApp Number**: e.g. `+923001234567`
+   * **WhatsApp Number**: e.g. `+923001234567` (include country code for direct WhatsApp click-to-chat).
    * **Discord Invite**: e.g. `https://discord.gg/yourserver`
    * **Bank Account 1 (Meezan / Raast)**: Account Title, IBAN / Raast ID, and image URL/path to your scanned static Raast QR code.
    * **Bank Account 2 (Easypaisa)**: Account Title, Mobile Number, and scanned Easypaisa QR screenshot image.

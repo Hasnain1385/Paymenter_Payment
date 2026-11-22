@@ -32,18 +32,18 @@ class MultiBankQR extends Gateway
     public function boot()
     {
         // Load composer autoload if vendor exists inside extension folder
-        if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
-            require_once __DIR__ . '/../vendor/autoload.php';
+        if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+            require_once __DIR__ . '/vendor/autoload.php';
         }
 
         // Register Web routes
-        if (file_exists(__DIR__ . '/../routes/web.php')) {
-            require __DIR__ . '/../routes/web.php';
+        if (file_exists(__DIR__ . '/routes/web.php')) {
+            require __DIR__ . '/routes/web.php';
         }
 
         // Register Views namespace
-        if (file_exists(__DIR__ . '/../resources/views')) {
-            View::addNamespace('multibankqr', __DIR__ . '/../resources/views');
+        if (file_exists(__DIR__ . '/resources/views')) {
+            View::addNamespace('multibankqr', __DIR__ . '/resources/views');
         }
 
         // Auto-migrate tables if not yet created
@@ -571,7 +571,7 @@ class MultiBankQR extends Gateway
     {
         try {
             if (!Schema::hasTable('multibank_accounts') || !Schema::hasTable('multibank_transactions')) {
-                $migrationPath = realpath(__DIR__ . '/../database/migrations');
+                $migrationPath = realpath(__DIR__ . '/database/migrations');
                 if ($migrationPath) {
                     $files = glob($migrationPath . '/*.php');
                     sort($files);

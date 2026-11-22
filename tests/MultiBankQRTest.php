@@ -1,5 +1,16 @@
 <?php
 
+namespace Illuminate\Database\Eloquent {
+    if (!class_exists('Illuminate\Database\Eloquent\Model')) {
+        class Model {
+            protected array $attributes = [];
+            public function __get($key) { return $this->attributes[$key] ?? null; }
+            public function __set($key, $val) { $this->attributes[$key] = $val; }
+        }
+    }
+}
+
+namespace {
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Paymenter\Extensions\Gateways\MultiBankQR\Services\QrCodeService;
@@ -83,3 +94,4 @@ class MultiBankQRTest
 }
 
 MultiBankQRTest::run();
+}
