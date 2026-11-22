@@ -22,7 +22,26 @@ class MultiBankTransactionResource extends Resource
 {
     protected static ?string $model = MultiBankTransaction::class;
 
-    protected static bool $shouldRegisterNavigation = true;
+    protected static bool $shouldRegisterNavigation = false;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    public static function getUrl(string $name = 'index', array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
+    {
+        try {
+            $panelObj = $panel ? \Filament\Facades\Filament::getPanel($panel) : (class_exists(\Filament\Facades\Filament::class) ? \Filament\Facades\Filament::getCurrentPanel() : null);
+            $panelId = $panelObj ? $panelObj->getId() : 'admin';
+            $routeName = "filament.{$panelId}.resources.multi-bank-transactions.{$name}";
+            if (\Illuminate\Support\Facades\Route::has($routeName)) {
+                return route($routeName, $parameters, $isAbsolute);
+            }
+        } catch (\Throwable $e) {}
+
+        return url('/admin/multibankqr/transactions');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-check-badge';
 
@@ -36,8 +55,14 @@ class MultiBankTransactionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = MultiBankTransaction::whereIn('status', [MultiBankTransaction::STATUS_PENDING_VERIFICATION, 'pending'])->count();
-        return $count > 0 ? (string) $count : null;
+        try {
+            if (class_exists(MultiBankTransaction::class)) {
+                $count = MultiBankTransaction::whereIn('status', [MultiBankTransaction::STATUS_PENDING_VERIFICATION, 'pending'])->count();
+                return $count > 0 ? (string) $count : null;
+            }
+        } catch (\Throwable $e) {}
+
+        return null;
     }
 
     public static function getNavigationBadgeColor(): ?string

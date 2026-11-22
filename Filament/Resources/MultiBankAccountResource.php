@@ -18,7 +18,26 @@ class MultiBankAccountResource extends Resource
 {
     protected static ?string $model = MultiBankAccount::class;
 
-    protected static bool $shouldRegisterNavigation = true;
+    protected static bool $shouldRegisterNavigation = false;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    public static function getUrl(string $name = 'index', array $parameters = [], bool $isAbsolute = true, ?string $panel = null): string
+    {
+        try {
+            $panelObj = $panel ? \Filament\Facades\Filament::getPanel($panel) : (class_exists(\Filament\Facades\Filament::class) ? \Filament\Facades\Filament::getCurrentPanel() : null);
+            $panelId = $panelObj ? $panelObj->getId() : 'admin';
+            $routeName = "filament.{$panelId}.resources.multi-bank-accounts.{$name}";
+            if (\Illuminate\Support\Facades\Route::has($routeName)) {
+                return route($routeName, $parameters, $isAbsolute);
+            }
+        } catch (\Throwable $e) {}
+
+        return url('/admin/multibankqr/accounts');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
 
