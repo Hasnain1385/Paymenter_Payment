@@ -20,8 +20,8 @@ if (!class_exists('App\Classes\Extension\Gateway') && class_exists('App\Classes\
     name: 'PakBank QR & Manual Verification',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, HBL, Bank Alfalah, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord direct contact buttons, and manual admin verification workflow.',
     version: '1.1.0',
-    author: 'Nain',
-    url: 'https://github.com/nain/Paymenter_Payment',
+    author: 'Mirza Hasnain Baig',
+    url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/qrcode.svg'
 )]
 class MultiBankQR extends Gateway
@@ -58,8 +58,8 @@ class MultiBankQR extends Gateway
         return [
             'display_name' => 'PakBank QR & Manual Verification',
             'version' => '1.1.0',
-            'author' => 'Nain',
-            'website' => 'https://github.com/nain/Paymenter_Payment',
+            'author' => 'Mirza Hasnain Baig',
+            'website' => 'https://github.com/Hasnain1385/Paymenter_Payment',
         ];
     }
 

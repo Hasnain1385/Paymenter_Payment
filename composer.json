@@ -1,11 +1,12 @@
 {
-    "name": "nain/multibankqr",
+    "name": "hasnain1385/paymenter-payment",
     "description": "Multi-Bank Account QR Payment Gateway for Paymenter with WhatsApp & Discord contact links, proof submission, and admin verification.",
     "type": "paymenter-extension",
     "license": "MIT",
     "authors": [
         {
-            "name": "Nain",
+            "name": "Mirza Hasnain Baig",
+            "email": "hasbaig786@gmail.com",
             "role": "Developer"
         }
     ],
