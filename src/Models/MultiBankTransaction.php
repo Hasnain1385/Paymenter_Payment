@@ -8,10 +8,16 @@ class MultiBankTransaction extends Model
 {
     protected $table = 'multibank_transactions';
 
-    public const STATUS_PENDING  = 'pending';
-    public const STATUS_APPROVED = 'approved';
-    public const STATUS_DECLINED = 'declined';
-    public const STATUS_FLAGGED  = 'flagged';
+    // Status lifecycle: Pending Payment -> Pending Verification -> Verified
+    public const STATUS_PENDING_PAYMENT      = 'pending_payment';
+    public const STATUS_PENDING_VERIFICATION = 'pending_verification';
+    public const STATUS_VERIFIED             = 'verified';
+    public const STATUS_DECLINED             = 'declined';
+    public const STATUS_FLAGGED              = 'flagged';
+
+    // Backward-compatibility aliases
+    public const STATUS_PENDING  = 'pending_verification';
+    public const STATUS_APPROVED = 'verified';
 
     protected $fillable = [
         'invoice_id',
@@ -36,14 +42,29 @@ class MultiBankTransaction extends Model
         'reviewed_at' => 'datetime',
     ];
 
+    public function isPendingPayment(): bool
+    {
+        return $this->status === self::STATUS_PENDING_PAYMENT;
+    }
+
+    public function isPendingVerification(): bool
+    {
+        return in_array($this->status, [self::STATUS_PENDING_VERIFICATION, 'pending', 'under_review']);
+    }
+
     public function isPending(): bool
     {
-        return $this->status === self::STATUS_PENDING;
+        return $this->isPendingVerification();
+    }
+
+    public function isVerified(): bool
+    {
+        return in_array($this->status, [self::STATUS_VERIFIED, 'approved', 'paid']);
     }
 
     public function isApproved(): bool
     {
-        return $this->status === self::STATUS_APPROVED;
+        return $this->isVerified();
     }
 
     public function isDeclined(): bool
@@ -57,16 +78,19 @@ class MultiBankTransaction extends Model
     }
 
     /**
-     * Human-friendly status label.
+     * Exact lifecycle status label.
      */
     public function getStatusLabel(): string
     {
         return match ($this->status) {
-            self::STATUS_PENDING  => 'Awaiting Admin Verification',
-            self::STATUS_APPROVED => 'Payment Approved & Verified',
-            self::STATUS_DECLINED => 'Payment Declined',
-            self::STATUS_FLAGGED  => 'Action Required / Under Review',
-            default               => ucfirst($this->status),
+            self::STATUS_PENDING_PAYMENT      => 'Pending Payment',
+            self::STATUS_PENDING_VERIFICATION => 'Pending Verification',
+            'pending'                         => 'Pending Verification',
+            self::STATUS_VERIFIED             => 'Verified',
+            'approved'                        => 'Verified',
+            self::STATUS_DECLINED             => 'Payment Declined',
+            self::STATUS_FLAGGED              => 'Action Required / Under Review',
+            default                           => ucfirst(str_replace('_', ' ', $this->status)),
         };
     }
 
@@ -76,11 +100,14 @@ class MultiBankTransaction extends Model
     public function getStatusBadgeClass(): string
     {
         return match ($this->status) {
-            self::STATUS_PENDING  => 'bg-amber-100 text-amber-800 border-amber-300',
-            self::STATUS_APPROVED => 'bg-emerald-100 text-emerald-800 border-emerald-300',
-            self::STATUS_DECLINED => 'bg-rose-100 text-rose-800 border-rose-300',
-            self::STATUS_FLAGGED  => 'bg-sky-100 text-sky-800 border-sky-300',
-            default               => 'bg-gray-100 text-gray-800 border-gray-300',
+            self::STATUS_PENDING_PAYMENT      => 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200',
+            self::STATUS_PENDING_VERIFICATION => 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300',
+            'pending'                         => 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300',
+            self::STATUS_VERIFIED             => 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300',
+            'approved'                        => 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300',
+            self::STATUS_DECLINED             => 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300',
+            self::STATUS_FLAGGED              => 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/40 dark:text-sky-300',
+            default                           => 'bg-gray-100 text-gray-800 border-gray-300',
         };
     }
 

@@ -18,13 +18,14 @@ return new class extends Migration
                 $table->unsignedBigInteger('user_id')->nullable()->index();
                 $table->string('bank_account_name')->nullable();
                 $table->decimal('amount', 12, 2)->default(0.00);
-                $table->string('currency', 10)->default('USD');
+                $table->string('currency', 10)->default('PKR');
                 $table->string('transaction_id', 150)->index(); // Customer TRX / UTR / Reference
                 $table->string('sender_name', 150); // Customer Account Name / Sender Title
                 $table->string('sender_account', 150)->nullable(); // Customer Bank or Wallet
                 $table->string('proof_image')->nullable(); // Uploaded screenshot receipt path
                 $table->text('customer_notes')->nullable();
-                $table->string('status', 30)->default('pending')->index(); // pending, approved, declined, flagged
+                // Status lifecycle: pending_payment -> pending_verification -> verified
+                $table->string('status', 40)->default('pending_verification')->index();
                 $table->text('admin_notes')->nullable(); // Visible note if flagged/under review
                 $table->text('decline_reason')->nullable(); // Visible reason if declined
                 $table->unsignedBigInteger('reviewed_by')->nullable();

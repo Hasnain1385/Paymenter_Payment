@@ -8,12 +8,13 @@ use chillerlan\QRCode\QROptions;
 class QrCodeService
 {
     /**
-     * Generate QR Code as Data URI or return direct image URL.
+     * Generate QR Code as Data URI or return direct scanned static image URL.
+     * Prioritizes scanned static QR images when provided by the merchant.
      *
      * @param string|null $payload Scanned string or payment payload
      * @param float|int|string|null $amount
      * @param string|int|null $invoiceId
-     * @param string|null $fallbackImageUrl
+     * @param string|null $staticImageUrl Scanned static QR image path or URL
      * @return array [
      *     'qr_src' => string, // data URI or URL
      *     'payload' => string,
@@ -24,9 +25,18 @@ class QrCodeService
         ?string $payload,
         float|int|string|null $amount = null,
         string|int|null $invoiceId = null,
-        ?string $fallbackImageUrl = null
+        ?string $staticImageUrl = null
     ): array {
-        // 1. If custom payload exists, generate dynamic QR
+        // 1. Merchant's Scanned Static QR Image has top priority
+        if (!empty($staticImageUrl)) {
+            return [
+                'qr_src'   => self::formatImageUrl($staticImageUrl),
+                'payload'  => $payload ?? '',
+                'is_image' => true,
+            ];
+        }
+
+        // 2. Generate dynamic vector QR if custom payload exists
         if (!empty($payload)) {
             $finalPayload = self::preparePayload($payload, $amount, $invoiceId);
 
@@ -35,13 +45,13 @@ class QrCodeService
                 if (class_exists(QRCode::class)) {
                     $options = new QROptions([
                         'outputBase64' => true,
-                        'scale' => 6,
+                        'scale'        => 6,
                     ]);
                     $dataUri = (new QRCode($options))->render($finalPayload);
 
                     return [
-                        'qr_src' => $dataUri,
-                        'payload' => $finalPayload,
+                        'qr_src'   => $dataUri,
+                        'payload'  => $finalPayload,
                         'is_image' => false,
                     ];
                 }
@@ -53,36 +63,20 @@ class QrCodeService
                     $result = $writer->write($qrCode);
 
                     return [
-                        'qr_src' => $result->getDataUri(),
-                        'payload' => $finalPayload,
+                        'qr_src'   => $result->getDataUri(),
+                        'payload'  => $finalPayload,
                         'is_image' => false,
                     ];
                 }
             } catch (\Throwable $e) {
-                // If rendering failed and fallback image exists, use fallback
-                if (!empty($fallbackImageUrl)) {
-                    return [
-                        'qr_src' => self::formatImageUrl($fallbackImageUrl),
-                        'payload' => $finalPayload,
-                        'is_image' => true,
-                    ];
-                }
+                // If rendering failed, return empty
             }
         }
 
-        // 2. If fallback image exists
-        if (!empty($fallbackImageUrl)) {
-            return [
-                'qr_src' => self::formatImageUrl($fallbackImageUrl),
-                'payload' => $payload ?? '',
-                'is_image' => true,
-            ];
-        }
-
-        // 3. Fallback: Quick placeholder or empty
+        // 3. Fallback: No QR available
         return [
-            'qr_src' => '',
-            'payload' => '',
+            'qr_src'   => '',
+            'payload'  => '',
             'is_image' => false,
         ];
     }
@@ -103,11 +97,14 @@ class QrCodeService
 
     /**
      * Format image URL to ensure public storage / asset path is correct.
+     * Sanitizes output to prevent XSS.
      */
     public static function formatImageUrl(string $path): string
     {
+        $path = trim($path);
+
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
-            return $path;
+            return filter_var($path, FILTER_SANITIZE_URL) ?: '';
         }
 
         // Check if it's a public storage path
@@ -119,9 +116,9 @@ class QrCodeService
     }
 
     /**
-     * Build UPI payment URI (standard for Indian banks / UPI apps).
+     * Build UPI payment URI (standard for UPI apps).
      */
-    public static function buildUpiPayload(string $upiId, string $name, $amount = null, $invoiceId = null, string $currency = 'INR'): string
+    public static function buildUpiPayload(string $upiId, string $name, $amount = null, $invoiceId = null, string $currency = 'PKR'): string
     {
         $params = [
             'pa' => $upiId,
@@ -150,7 +147,6 @@ class QrCodeService
         $cleanAmount = ($amount !== null && (float) $amount > 0) ? 'EUR' . number_format((float) $amount, 2, '.', '') : '';
         $ref = $invoiceId ? 'INV-' . $invoiceId : 'INVOICE';
 
-        // EPC standard format
         return "BCD\n002\n1\nSCT\n{$cleanBic}\n{$name}\n{$cleanIban}\n{$cleanAmount}\n\n{$ref}";
     }
 }

@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Log;
 class PaymentApprovalService
 {
     /**
-     * Approve the transaction and mark the invoice as PAID in Paymenter.
+     * Manually verify and approve the transaction, marking the invoice as PAID in Paymenter.
+     * Lifecycle: Pending Verification -> Verified.
      *
      * @param MultiBankTransaction $transaction
      * @param int|null $adminId
@@ -16,7 +17,7 @@ class PaymentApprovalService
      */
     public static function approve(MultiBankTransaction $transaction, ?int $adminId = null): bool
     {
-        $transaction->status = MultiBankTransaction::STATUS_APPROVED;
+        $transaction->status = MultiBankTransaction::STATUS_VERIFIED;
         $transaction->reviewed_by = $adminId;
         $transaction->reviewed_at = now();
         $transaction->save();

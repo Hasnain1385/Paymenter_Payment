@@ -17,9 +17,9 @@ if (!class_exists('App\Classes\Extension\Gateway') && class_exists('App\Classes\
 }
 
 #[ExtensionMeta(
-    name: 'MultiBank & Direct QR Pay',
-    description: 'Accept payments via multiple bank accounts, UPI, Wire, IBAN, Zelle, Wise, and mobile wallets with interactive QR codes, direct WhatsApp and Discord deal-closing contact links, and streamlined payment proof verification.',
-    version: '1.0.0',
+    name: 'PakBank QR & Manual Verification',
+    description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, HBL, Bank Alfalah, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord direct contact buttons, and manual admin verification workflow.',
+    version: '1.1.0',
     author: 'Nain',
     url: 'https://github.com/nain/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/qrcode.svg'
@@ -56,8 +56,8 @@ class MultiBankQR extends Gateway
     public function getMetadata()
     {
         return [
-            'display_name' => 'MultiBank & Direct QR Pay',
-            'version' => '1.0.0',
+            'display_name' => 'PakBank QR & Manual Verification',
+            'version' => '1.1.0',
             'author' => 'Nain',
             'website' => 'https://github.com/nain/Paymenter_Payment',
         ];
@@ -65,6 +65,7 @@ class MultiBankQR extends Gateway
 
     /**
      * Define extension settings in Paymenter Admin Panel.
+     * Structured specifically for Pakistani payments with static scanned QR images.
      */
     public function getConfig($values = [])
     {
@@ -72,19 +73,27 @@ class MultiBankQR extends Gateway
             // --- Contact & Deal Closing (WhatsApp & Discord) ---
             [
                 'name' => 'whatsapp_number',
-                'label' => 'WhatsApp Phone Number',
+                'label' => 'Support / Sales WhatsApp Number',
                 'type' => 'text',
-                'default' => '',
-                'placeholder' => '+1234567890 or +923001234567',
-                'description' => 'Your official WhatsApp number in international format. Powers the 1-click WhatsApp proof & sales chat button.',
+                'default' => '+923001234567',
+                'placeholder' => '+923001234567',
+                'description' => 'Your official WhatsApp number (e.g. +923001234567). Enables 1-click WhatsApp buttons for pre-payment queries and post-payment proof delivery.',
                 'required' => false,
             ],
             [
-                'name' => 'whatsapp_message',
-                'label' => 'WhatsApp Pre-filled Message Template',
+                'name' => 'whatsapp_prepay_message',
+                'label' => 'WhatsApp Pre-Payment Message Template',
                 'type' => 'textarea',
-                'default' => "Hello! I have sent payment for Invoice #{invoice_id} ({amount} {currency}).\n\nTransaction ID: {trx_id}\nSender Name: {sender_name}\n\nPlease verify and activate my order.",
-                'description' => 'Dynamic tokens supported: {invoice_id}, {amount}, {currency}, {trx_id}, {sender_name}, {client_name}.',
+                'default' => "Assalam-o-Alaikum! I have a question regarding Invoice #{invoice_id} ({amount} {currency}) before making payment. Can you please assist me?",
+                'description' => 'Message sent when customer clicks "Contact on WhatsApp Before Paying". Tokens: {invoice_id}, {amount}, {currency}, {client_name}.',
+                'required' => false,
+            ],
+            [
+                'name' => 'whatsapp_postpay_message',
+                'label' => 'WhatsApp Post-Payment Message Template',
+                'type' => 'textarea',
+                'default' => "Assalam-o-Alaikum! I have transferred {amount} {currency} for Invoice #{invoice_id}.\n\nTransaction ID / TRX: {trx_id}\nSender Name: {sender_name}\n\nPlease manually verify and activate my order.",
+                'description' => 'Message sent when customer clicks "Send Proof on WhatsApp". Tokens: {invoice_id}, {amount}, {currency}, {trx_id}, {sender_name}, {client_name}.',
                 'required' => false,
             ],
             [
@@ -93,14 +102,14 @@ class MultiBankQR extends Gateway
                 'type' => 'text',
                 'default' => '',
                 'placeholder' => 'https://discord.gg/yourcommunity or https://discord.com/users/yourid',
-                'description' => 'Direct link for customers to join your Discord server or message your sales/support reps.',
+                'description' => 'Direct link for customers to join your Discord server or message support reps for order assistance.',
                 'required' => false,
             ],
             [
                 'name' => 'discord_instructions',
-                'label' => 'Discord Proof Channel Instructions',
+                'label' => 'Discord Channel Instructions',
                 'type' => 'text',
-                'default' => 'Join our Discord server and open a ticket or post in #payment-proofs for 24/7 activation.',
+                'default' => 'Join our Discord server and open a ticket or post in #payment-proofs for fast order verification.',
                 'description' => 'Helper note displayed under the Discord contact button.',
                 'required' => false,
             ],
@@ -114,20 +123,20 @@ class MultiBankQR extends Gateway
                 'required' => false,
             ],
 
-            // --- General Branding & Notice ---
+            // --- General Branding & Manual Verification Notice ---
             [
                 'name' => 'gateway_title',
                 'label' => 'Gateway Display Title',
                 'type' => 'text',
-                'default' => 'Direct Bank Transfer & QR Pay',
+                'default' => 'Pakistani Banks, Raast & Wallets (Manual Verification)',
                 'description' => 'Title shown to customers on checkout.',
                 'required' => false,
             ],
             [
                 'name' => 'custom_notice',
-                'label' => 'Checkout Trust Notice / Instructions',
+                'label' => 'Manual Verification Notice / Instructions',
                 'type' => 'textarea',
-                'default' => 'Please include your Invoice # in your transfer remarks/reference for instant verification. Our team verifies transfers in real time.',
+                'default' => '⚠️ Manual Verification Required: Please scan the static QR code or transfer the exact amount using your banking app (Meezan, HBL, Alfalah, Raast) or wallet (Easypaisa, JazzCash, SadaPay). Enter your Transaction ID (TRX/UTR) below after paying. Our team manually verifies payments in real time.',
                 'description' => 'Guidance banner displayed at the top of the payment screen.',
                 'required' => false,
             ],
@@ -136,11 +145,11 @@ class MultiBankQR extends Gateway
                 'label' => 'Require Screenshot Receipt Upload',
                 'type' => 'checkbox',
                 'default' => true,
-                'description' => 'If enabled, customers must upload a payment receipt/screenshot alongside their Transaction ID.',
+                'description' => 'If enabled, customers must attach a payment screenshot or receipt alongside their Transaction ID.',
                 'required' => false,
             ],
 
-            // --- Bank Account 1 (Primary / Default) ---
+            // --- Bank Account 1: Raast P2P / Commercial Bank (e.g. Meezan Bank) ---
             [
                 'name' => 'acc1_enabled',
                 'label' => 'Account 1: Enabled',
@@ -150,128 +159,127 @@ class MultiBankQR extends Gateway
             ],
             [
                 'name' => 'acc1_name',
-                'label' => 'Account 1: Bank / Method Name',
+                'label' => 'Account 1: Bank / Wallet Name',
                 'type' => 'text',
-                'default' => 'Primary Bank / Zelle / Wire',
-                'placeholder' => 'e.g. Chase Bank, Bank of America, Meezan Bank, HDFC UPI',
+                'default' => 'Meezan Bank / Raast P2P',
+                'placeholder' => 'e.g. Meezan Bank / Raast, HBL, Bank Alfalah',
                 'required' => false,
             ],
             [
                 'name' => 'acc1_badge',
                 'label' => 'Account 1: Badge / Tag',
                 'type' => 'text',
-                'default' => 'Recommended',
-                'placeholder' => 'e.g. Recommended, Instant, Zero Fee',
+                'default' => 'Instant Raast / 0 Fee',
                 'required' => false,
             ],
             [
                 'name' => 'acc1_title',
-                'label' => 'Account 1: Account Holder Name / Title',
+                'label' => 'Account 1: Account Holder Title / Name',
                 'type' => 'text',
-                'default' => 'Your Business Name LLC',
+                'default' => 'Your Business Account Title',
                 'required' => false,
             ],
             [
                 'name' => 'acc1_number',
-                'label' => 'Account 1: Account Number / IBAN / UPI ID / Address',
+                'label' => 'Account 1: Account Number / IBAN / Raast ID',
                 'type' => 'text',
-                'default' => '123456789012',
+                'default' => 'PK00MEZN0000000000000000',
                 'required' => false,
             ],
             [
                 'name' => 'acc1_routing',
-                'label' => 'Account 1: Routing / SWIFT / BIC / IFSC / Branch',
+                'label' => 'Account 1: Bank Name / Branch / Code',
                 'type' => 'text',
-                'default' => 'ROUTING12345',
-                'required' => false,
-            ],
-            [
-                'name' => 'acc1_qr_payload',
-                'label' => 'Account 1: Dynamic QR Payload (Optional)',
-                'type' => 'text',
-                'default' => '',
-                'placeholder' => 'upi://pay?pa=name@upi&pn=Business&am={amount} or payment URL',
-                'description' => 'If provided, auto-generates a dynamic QR code. Tokens: {amount}, {invoice_id}.',
+                'default' => 'Meezan Bank Limited',
                 'required' => false,
             ],
             [
                 'name' => 'acc1_qr_image',
-                'label' => 'Account 1: Static QR Code Image URL (Optional)',
+                'label' => 'Account 1: Scanned Static QR Image (URL or Storage Path)',
                 'type' => 'text',
                 'default' => '',
-                'placeholder' => 'https://yourdomain.com/qrcodes/bank1.png',
-                'description' => 'Direct link or storage path to a pre-generated QR code image.',
+                'placeholder' => 'https://yourdomain.com/qrcodes/meezan_raast.png or storage/multibank_qrcodes/...',
+                'description' => 'Direct URL or path to your scanned static Meezan / Raast QR code image.',
+                'required' => false,
+            ],
+            [
+                'name' => 'acc1_qr_payload',
+                'label' => 'Account 1: Dynamic QR / UPI / Raw String (Optional)',
+                'type' => 'text',
+                'default' => '',
+                'description' => 'Optional raw payload or URL for dynamic QR fallback.',
                 'required' => false,
             ],
             [
                 'name' => 'acc1_currency',
                 'label' => 'Account 1: Currency Code',
                 'type' => 'text',
-                'default' => 'ALL',
-                'description' => 'Specify currency (e.g. USD, EUR, PKR, INR) or "ALL" for universal.',
+                'default' => 'PKR',
                 'required' => false,
             ],
             [
                 'name' => 'acc1_instructions',
-                'label' => 'Account 1: Custom Remarks / Instructions',
+                'label' => 'Account 1: Instructions',
                 'type' => 'text',
-                'default' => 'Include your Invoice ID in the transfer remarks.',
+                'default' => 'Send via Raast P2P or Meezan Bank. Please put Invoice ID in remarks.',
                 'required' => false,
             ],
 
-            // --- Bank Account 2 ---
+            // --- Bank Account 2: Easypaisa Mobile Wallet ---
             [
                 'name' => 'acc2_enabled',
                 'label' => 'Account 2: Enabled',
                 'type' => 'checkbox',
-                'default' => false,
+                'default' => true,
                 'required' => false,
             ],
             [
                 'name' => 'acc2_name',
-                'label' => 'Account 2: Bank / Method Name',
+                'label' => 'Account 2: Bank / Wallet Name',
                 'type' => 'text',
-                'default' => 'Wise / Revolut / Secondary Bank',
+                'default' => 'Easypaisa Mobile Wallet',
                 'required' => false,
             ],
             [
                 'name' => 'acc2_badge',
                 'label' => 'Account 2: Badge / Tag',
                 'type' => 'text',
-                'default' => 'International Transfer',
+                'default' => 'Easypaisa Mobile',
                 'required' => false,
             ],
             [
                 'name' => 'acc2_title',
-                'label' => 'Account 2: Account Holder Name / Title',
+                'label' => 'Account 2: Account Holder Title / Name',
                 'type' => 'text',
-                'default' => '',
+                'default' => 'Your Account Title',
                 'required' => false,
             ],
             [
                 'name' => 'acc2_number',
-                'label' => 'Account 2: Account Number / IBAN / Address',
+                'label' => 'Account 2: Mobile Number / Account Number',
                 'type' => 'text',
-                'default' => '',
+                'default' => '03001234567',
                 'required' => false,
             ],
             [
                 'name' => 'acc2_routing',
-                'label' => 'Account 2: Routing / SWIFT / BIC / IFSC',
+                'label' => 'Account 2: Bank / Wallet Provider',
                 'type' => 'text',
-                'default' => '',
-                'required' => false,
-            ],
-            [
-                'name' => 'acc2_qr_payload',
-                'label' => 'Account 2: Dynamic QR Payload (Optional)',
-                'type' => 'text',
-                'default' => '',
+                'default' => 'Telenor Microfinance Bank',
                 'required' => false,
             ],
             [
                 'name' => 'acc2_qr_image',
-                'label' => 'Account 2: Static QR Image URL (Optional)',
+                'label' => 'Account 2: Scanned Static QR Image (URL or Storage Path)',
+                'type' => 'text',
+                'default' => '',
+                'placeholder' => 'https://yourdomain.com/qrcodes/easypaisa.png',
+                'description' => 'Direct link to your scanned Easypaisa account QR screenshot.',
+                'required' => false,
+            ],
+            [
+                'name' => 'acc2_qr_payload',
+                'label' => 'Account 2: Dynamic QR / Payload (Optional)',
                 'type' => 'text',
                 'default' => '',
                 'required' => false,
@@ -280,71 +288,72 @@ class MultiBankQR extends Gateway
                 'name' => 'acc2_currency',
                 'label' => 'Account 2: Currency Code',
                 'type' => 'text',
-                'default' => 'ALL',
+                'default' => 'PKR',
                 'required' => false,
             ],
             [
                 'name' => 'acc2_instructions',
-                'label' => 'Account 2: Custom Remarks / Instructions',
+                'label' => 'Account 2: Instructions',
                 'type' => 'text',
-                'default' => '',
+                'default' => 'Open Easypaisa app, tap Scan QR or transfer to mobile number.',
                 'required' => false,
             ],
 
-            // --- Bank Account 3 ---
+            // --- Bank Account 3: JazzCash Mobile Wallet ---
             [
                 'name' => 'acc3_enabled',
                 'label' => 'Account 3: Enabled',
                 'type' => 'checkbox',
-                'default' => false,
+                'default' => true,
                 'required' => false,
             ],
             [
                 'name' => 'acc3_name',
-                'label' => 'Account 3: Bank / Method Name',
+                'label' => 'Account 3: Bank / Wallet Name',
                 'type' => 'text',
-                'default' => '',
-                'placeholder' => 'e.g. Binance Pay / Crypto USDT',
+                'default' => 'JazzCash Mobile Wallet',
                 'required' => false,
             ],
             [
                 'name' => 'acc3_badge',
                 'label' => 'Account 3: Badge / Tag',
                 'type' => 'text',
-                'default' => 'Instant',
+                'default' => 'JazzCash App',
                 'required' => false,
             ],
             [
                 'name' => 'acc3_title',
-                'label' => 'Account 3: Account Holder / Wallet',
+                'label' => 'Account 3: Account Holder Title / Name',
                 'type' => 'text',
-                'default' => '',
+                'default' => 'Your Account Title',
                 'required' => false,
             ],
             [
                 'name' => 'acc3_number',
-                'label' => 'Account 3: Account Number / Wallet Address',
+                'label' => 'Account 3: Mobile Number / Account Number',
                 'type' => 'text',
-                'default' => '',
+                'default' => '03001234567',
                 'required' => false,
             ],
             [
                 'name' => 'acc3_routing',
-                'label' => 'Account 3: Routing / Network (e.g. TRC20)',
+                'label' => 'Account 3: Bank / Wallet Provider',
                 'type' => 'text',
-                'default' => '',
-                'required' => false,
-            ],
-            [
-                'name' => 'acc3_qr_payload',
-                'label' => 'Account 3: Dynamic QR Payload (Optional)',
-                'type' => 'text',
-                'default' => '',
+                'default' => 'Mobilink Microfinance Bank',
                 'required' => false,
             ],
             [
                 'name' => 'acc3_qr_image',
-                'label' => 'Account 3: Static QR Image URL (Optional)',
+                'label' => 'Account 3: Scanned Static QR Image (URL or Storage Path)',
+                'type' => 'text',
+                'default' => '',
+                'placeholder' => 'https://yourdomain.com/qrcodes/jazzcash.png',
+                'description' => 'Direct link to your scanned JazzCash account QR screenshot.',
+                'required' => false,
+            ],
+            [
+                'name' => 'acc3_qr_payload',
+                'label' => 'Account 3: Dynamic QR / Payload (Optional)',
                 'type' => 'text',
                 'default' => '',
                 'required' => false,
@@ -353,18 +362,18 @@ class MultiBankQR extends Gateway
                 'name' => 'acc3_currency',
                 'label' => 'Account 3: Currency Code',
                 'type' => 'text',
-                'default' => 'ALL',
+                'default' => 'PKR',
                 'required' => false,
             ],
             [
                 'name' => 'acc3_instructions',
-                'label' => 'Account 3: Custom Remarks / Instructions',
+                'label' => 'Account 3: Instructions',
                 'type' => 'text',
-                'default' => '',
+                'default' => 'Open JazzCash app, tap Scan QR or send to mobile number.',
                 'required' => false,
             ],
 
-            // --- Bank Account 4 ---
+            // --- Bank Account 4: SadaPay / NayaPay / Bank Alfalah ---
             [
                 'name' => 'acc4_enabled',
                 'label' => 'Account 4: Enabled',
@@ -374,49 +383,49 @@ class MultiBankQR extends Gateway
             ],
             [
                 'name' => 'acc4_name',
-                'label' => 'Account 4: Bank / Method Name',
+                'label' => 'Account 4: Bank / Wallet Name',
                 'type' => 'text',
-                'default' => '',
+                'default' => 'SadaPay / NayaPay / Bank Alfalah',
                 'required' => false,
             ],
             [
                 'name' => 'acc4_badge',
                 'label' => 'Account 4: Badge / Tag',
                 'type' => 'text',
-                'default' => 'Zero Fee',
+                'default' => 'SadaPay / IBAN',
                 'required' => false,
             ],
             [
                 'name' => 'acc4_title',
-                'label' => 'Account 4: Account Holder Name / Title',
+                'label' => 'Account 4: Account Holder Title / Name',
                 'type' => 'text',
                 'default' => '',
                 'required' => false,
             ],
             [
                 'name' => 'acc4_number',
-                'label' => 'Account 4: Account Number / IBAN / Address',
+                'label' => 'Account 4: Account Number / IBAN',
                 'type' => 'text',
                 'default' => '',
                 'required' => false,
             ],
             [
                 'name' => 'acc4_routing',
-                'label' => 'Account 4: Routing / SWIFT / IFSC',
+                'label' => 'Account 4: Bank / Provider Name',
+                'type' => 'text',
+                'default' => 'SadaPay / Bank Alfalah',
+                'required' => false,
+            ],
+            [
+                'name' => 'acc4_qr_image',
+                'label' => 'Account 4: Scanned Static QR Image (URL or Storage Path)',
                 'type' => 'text',
                 'default' => '',
                 'required' => false,
             ],
             [
                 'name' => 'acc4_qr_payload',
-                'label' => 'Account 4: Dynamic QR Payload (Optional)',
-                'type' => 'text',
-                'default' => '',
-                'required' => false,
-            ],
-            [
-                'name' => 'acc4_qr_image',
-                'label' => 'Account 4: Static QR Image URL (Optional)',
+                'label' => 'Account 4: Dynamic QR / Payload (Optional)',
                 'type' => 'text',
                 'default' => '',
                 'required' => false,
@@ -425,14 +434,14 @@ class MultiBankQR extends Gateway
                 'name' => 'acc4_currency',
                 'label' => 'Account 4: Currency Code',
                 'type' => 'text',
-                'default' => 'ALL',
+                'default' => 'PKR',
                 'required' => false,
             ],
             [
                 'name' => 'acc4_instructions',
-                'label' => 'Account 4: Custom Remarks / Instructions',
+                'label' => 'Account 4: Instructions',
                 'type' => 'text',
-                'default' => '',
+                'default' => 'Transfer via SadaPay app or IBAN transfer.',
                 'required' => false,
             ],
 
@@ -442,8 +451,8 @@ class MultiBankQR extends Gateway
                 'label' => 'Advanced: Custom Accounts JSON (Optional)',
                 'type' => 'textarea',
                 'default' => '',
-                'placeholder' => '[{"name":"Custom Bank","account_title":"Corp","account_number":"123","routing_code":"XYZ","badge":"Instant"}]',
-                'description' => 'Optional JSON array for adding unlimited bank accounts or wallets dynamically.',
+                'placeholder' => '[{"name":"Faysal Bank","account_title":"Corp","account_number":"PK00...","routing_code":"Faysal","badge":"0 Fee"}]',
+                'description' => 'Optional JSON array for adding unlimited Pakistani bank accounts or wallets dynamically.',
                 'required' => false,
             ],
         ];
@@ -468,8 +477,8 @@ class MultiBankQR extends Gateway
         // Extract settings
         $config = is_array($this->config) ? $this->config : [];
 
-        // Fetch bank accounts matching currency
-        $currency = $invoice->currency_code ?? ($invoice->currency ?? 'USD');
+        // Fetch bank accounts matching currency (defaults to PKR if not set)
+        $currency = $invoice->currency_code ?? ($invoice->currency ?? 'PKR');
         $accounts = BankAccountService::getAccountsForInvoice($config, $total, $currency, $invoice->id);
 
         // Fetch existing submitted transaction if any
@@ -482,38 +491,54 @@ class MultiBankQR extends Gateway
             // Ignore
         }
 
-        // WhatsApp direct click-to-chat URL with pre-filled message
+        // WhatsApp direct links: Both Pre-Payment (questions before paying) & Post-Payment (sending proof)
         $rawPhone = $this->config('whatsapp_number');
         $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone ?? '');
-        $whatsappUrl = null;
+        $whatsappPrePayUrl = null;
+        $whatsappPostPayUrl = null;
+
         if (!empty($cleanPhone)) {
             $clientName = $invoice->user ? ($invoice->user->name ?? 'Customer') : 'Customer';
-            $msgTemplate = $this->config('whatsapp_message') ?: "Hello! I am sending payment for Invoice #{invoice_id} ({amount} {currency}).\n\nTransaction ID: {trx_id}\nSender Name: {sender_name}\n\nPlease confirm my order.";
-            $msg = str_replace(
+            $formattedTotal = number_format((float) $total, 2);
+
+            // 1. Pre-Payment WhatsApp URL: Questions before paying
+            $preMsgTemplate = $this->config('whatsapp_prepay_message')
+                ?: "Assalam-o-Alaikum! I have a question regarding Invoice #{invoice_id} ({amount} {currency}) before making payment. Can you please assist me?";
+            $preMsg = str_replace(
+                ['{invoice_id}', '{amount}', '{currency}', '{client_name}'],
+                [$invoice->id, $formattedTotal, $currency, $clientName],
+                $preMsgTemplate
+            );
+            $whatsappPrePayUrl = 'https://wa.me/' . $cleanPhone . '?text=' . rawurlencode($preMsg);
+
+            // 2. Post-Payment WhatsApp URL: Sending proof of payment
+            $postMsgTemplate = $this->config('whatsapp_postpay_message')
+                ?: "Assalam-o-Alaikum! I have transferred {amount} {currency} for Invoice #{invoice_id}.\n\nTransaction ID / TRX: {trx_id}\nSender Name: {sender_name}\n\nPlease manually verify and activate my order.";
+            $postMsg = str_replace(
                 ['{invoice_id}', '{amount}', '{currency}', '{trx_id}', '{sender_name}', '{client_name}'],
                 [
                     $invoice->id,
-                    number_format((float) $total, 2),
+                    $formattedTotal,
                     $currency,
-                    $transaction ? $transaction->transaction_id : '[Pending Input]',
+                    $transaction ? $transaction->transaction_id : '[Enter TRX]',
                     $transaction ? $transaction->sender_name : $clientName,
                     $clientName,
                 ],
-                $msgTemplate
+                $postMsgTemplate
             );
-            $whatsappUrl = 'https://wa.me/' . $cleanPhone . '?text=' . rawurlencode($msg);
+            $whatsappPostPayUrl = 'https://wa.me/' . $cleanPhone . '?text=' . rawurlencode($postMsg);
         }
 
         // Discord direct link
         $discordInvite = $this->config('discord_invite');
-        $discordInstructions = $this->config('discord_instructions') ?: 'Join our Discord server and open a ticket or post in #payment-proofs.';
+        $discordInstructions = $this->config('discord_instructions') ?: 'Join our Discord server and open a ticket or post in #payment-proofs for fast order verification.';
 
         // Telegram link
         $telegramLink = $this->config('telegram_link');
 
         // General settings
-        $gatewayTitle = $this->config('gateway_title') ?: 'Direct Bank Transfer & QR Pay';
-        $customNotice = $this->config('custom_notice') ?: 'Please include your Invoice # in your transfer remarks/reference for instant verification.';
+        $gatewayTitle = $this->config('gateway_title') ?: 'Pakistani Banks, Raast & Wallets (Manual Verification)';
+        $customNotice = $this->config('custom_notice') ?: '⚠️ Manual Verification: Please scan the static QR code or transfer the exact amount using your banking app (Meezan, HBL, Alfalah, Raast) or wallet (Easypaisa, JazzCash, SadaPay). Enter your Transaction ID (TRX/UTR) below after paying. Our team manually verifies payments in real time.';
         $requireProofImage = $this->config('require_proof_image');
         if ($requireProofImage === null) {
             $requireProofImage = true;
@@ -522,19 +547,20 @@ class MultiBankQR extends Gateway
         $viewName = $isStandalone ? 'multibankqr::standalone' : 'multibankqr::pay';
 
         return view($viewName, [
-            'invoice' => $invoice,
-            'total' => $total,
-            'currency' => $currency,
-            'accounts' => $accounts,
-            'transaction' => $transaction,
-            'whatsappUrl' => $whatsappUrl,
-            'whatsappPhone' => $rawPhone,
-            'discordInvite' => $discordInvite,
+            'invoice'            => $invoice,
+            'total'              => $total,
+            'currency'           => $currency,
+            'accounts'           => $accounts,
+            'transaction'        => $transaction,
+            'whatsappPrePayUrl'  => $whatsappPrePayUrl,
+            'whatsappPostPayUrl' => $whatsappPostPayUrl,
+            'whatsappPhone'      => $rawPhone,
+            'discordInvite'      => $discordInvite,
             'discordInstructions' => $discordInstructions,
-            'telegramLink' => $telegramLink,
-            'gatewayTitle' => $gatewayTitle,
-            'customNotice' => $customNotice,
-            'requireProofImage' => (bool) $requireProofImage,
+            'telegramLink'       => $telegramLink,
+            'gatewayTitle'       => $gatewayTitle,
+            'customNotice'       => $customNotice,
+            'requireProofImage'  => (bool) $requireProofImage,
         ]);
     }
 

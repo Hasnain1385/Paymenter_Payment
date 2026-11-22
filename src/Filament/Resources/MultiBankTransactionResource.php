@@ -25,15 +25,15 @@ class MultiBankTransactionResource extends Resource
 
     protected static ?string $navigationGroup = 'Payments';
 
-    protected static ?string $navigationLabel = 'Bank QR Proofs';
+    protected static ?string $navigationLabel = 'Manual Bank Proofs';
 
-    protected static ?string $modelLabel = 'Bank QR Transaction';
+    protected static ?string $modelLabel = 'Bank Proof Transaction';
 
     protected static ?int $navigationSort = 15;
 
     public static function getNavigationBadge(): ?string
     {
-        $count = MultiBankTransaction::where('status', MultiBankTransaction::STATUS_PENDING)->count();
+        $count = MultiBankTransaction::whereIn('status', [MultiBankTransaction::STATUS_PENDING_VERIFICATION, 'pending'])->count();
         return $count > 0 ? (string) $count : null;
     }
 
@@ -59,10 +59,10 @@ class MultiBankTransactionResource extends Resource
                     ->label('Receiving Account')
                     ->disabled(),
                 Forms\Components\TextInput::make('transaction_id')
-                    ->label('Transaction ID / UTR')
+                    ->label('Transaction ID / TRX / UTR')
                     ->disabled(),
                 Forms\Components\TextInput::make('sender_name')
-                    ->label('Sender Name')
+                    ->label('Sender Name / Mobile')
                     ->disabled(),
                 Forms\Components\TextInput::make('status')
                     ->label('Status')
@@ -94,7 +94,7 @@ class MultiBankTransactionResource extends Resource
                     ->money(fn ($record) => $record->currency)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('bank_account_name')
-                    ->label('Bank Account')
+                    ->label('Receiving Bank')
                     ->badge()
                     ->color('info')
                     ->searchable(),
@@ -105,20 +105,22 @@ class MultiBankTransactionResource extends Resource
                     ->searchable()
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('sender_name')
-                    ->label('Sender Name')
+                    ->label('Sender Name / No.')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        MultiBankTransaction::STATUS_APPROVED => 'success',
-                        MultiBankTransaction::STATUS_PENDING  => 'warning',
-                        MultiBankTransaction::STATUS_DECLINED => 'danger',
-                        MultiBankTransaction::STATUS_FLAGGED  => 'info',
-                        default                               => 'gray',
+                        MultiBankTransaction::STATUS_VERIFIED             => 'success',
+                        'approved'                                        => 'success',
+                        MultiBankTransaction::STATUS_PENDING_VERIFICATION => 'warning',
+                        'pending'                                         => 'warning',
+                        MultiBankTransaction::STATUS_DECLINED             => 'danger',
+                        MultiBankTransaction::STATUS_FLAGGED              => 'info',
+                        default                                           => 'gray',
                     })
-                    ->formatStateUsing(fn ($state) => ucfirst($state)),
+                    ->formatStateUsing(fn ($record) => $record->getStatusLabel()),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Submitted')
+                    ->label('Submitted At')
                     ->dateTime()
                     ->sortable(),
             ])
@@ -126,28 +128,28 @@ class MultiBankTransactionResource extends Resource
             ->actions([
                 // View Screenshot Proof Action
                 Action::make('viewProof')
-                    ->label('View Proof')
+                    ->label('View Receipt')
                     ->icon('heroicon-o-photo')
                     ->color('gray')
-                    ->modalHeading(fn (MultiBankTransaction $record) => "Proof for Invoice #{$record->invoice_id} — TRX: {$record->transaction_id}")
+                    ->modalHeading(fn (MultiBankTransaction $record) => "Payment Proof for Invoice #{$record->invoice_id} (TRX: {$record->transaction_id})")
                     ->modalSubmitAction(false)
                     ->modalContent(fn (MultiBankTransaction $record) => view('multibankqr::filament.view-proof-modal', ['transaction' => $record]))
                     ->visible(fn (MultiBankTransaction $record) => !empty($record->proof_image)),
 
-                // 1-Click Approve Action
+                // 1-Click Approve / Verify Action
                 Action::make('approve')
                     ->label('Approve & Mark Paid')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalHeading('Approve Payment')
-                    ->modalDescription(fn (MultiBankTransaction $record) => "Are you sure you want to approve Invoice #{$record->invoice_id}? This will mark the invoice as PAID and trigger order provisioning.")
+                    ->modalHeading('Manually Verify Payment')
+                    ->modalDescription(fn (MultiBankTransaction $record) => "Are you sure you want to verify Invoice #{$record->invoice_id}? This marks the invoice as PAID, sets status to Verified, and provisions customer services.")
                     ->action(function (MultiBankTransaction $record) {
                         $success = PaymentApprovalService::approve($record, auth()->id());
                         if ($success) {
                             Notification::make()
-                                ->title('Invoice Marked as Paid')
-                                ->body("Invoice #{$record->invoice_id} has been approved and paid.")
+                                ->title('Invoice Verified & Paid')
+                                ->body("Invoice #{$record->invoice_id} has been manually approved and marked as PAID.")
                                 ->success()
                                 ->send();
                         } else {
@@ -158,9 +160,9 @@ class MultiBankTransactionResource extends Resource
                                 ->send();
                         }
                     })
-                    ->visible(fn (MultiBankTransaction $record) => $record->status !== MultiBankTransaction::STATUS_APPROVED),
+                    ->visible(fn (MultiBankTransaction $record) => !$record->isVerified()),
 
-                // Flag / Under Review Action
+                // Flag Issue Action
                 Action::make('flag')
                     ->label('Flag Issue')
                     ->icon('heroicon-o-flag')
@@ -168,7 +170,7 @@ class MultiBankTransactionResource extends Resource
                     ->form([
                         Forms\Components\Textarea::make('note')
                             ->label('Note for Customer')
-                            ->placeholder('e.g. Received partial amount, or TRX ID cannot be found. Please check and re-upload.')
+                            ->placeholder('e.g. Received partial amount (PKR 3,000 instead of PKR 5,000), or TRX ID not appearing on Meezan bank statement.')
                             ->required(),
                     ])
                     ->action(function (MultiBankTransaction $record, array $data) {
@@ -179,7 +181,7 @@ class MultiBankTransactionResource extends Resource
                             ->info()
                             ->send();
                     })
-                    ->visible(fn (MultiBankTransaction $record) => $record->status !== MultiBankTransaction::STATUS_APPROVED),
+                    ->visible(fn (MultiBankTransaction $record) => !$record->isVerified()),
 
                 // Decline Action
                 Action::make('decline')
@@ -190,25 +192,23 @@ class MultiBankTransactionResource extends Resource
                     ->form([
                         Forms\Components\Textarea::make('reason')
                             ->label('Decline Reason')
-                            ->placeholder('e.g. Fraudulent transaction / unverified payment.')
+                            ->placeholder('e.g. Invalid TRX ID or unverified transaction on bank statement.')
                             ->required(),
                     ])
                     ->action(function (MultiBankTransaction $record, array $data) {
                         PaymentApprovalService::decline($record, $data['reason'], auth()->id());
                         Notification::make()
                             ->title('Transaction Declined')
-                            ->body("Transaction #{$record->id} declined.")
+                            ->body("Transaction #{$record->id} marked as declined.")
                             ->danger()
                             ->send();
                     })
-                    ->visible(fn (MultiBankTransaction $record) => $record->status !== MultiBankTransaction::STATUS_DECLINED),
+                    ->visible(fn (MultiBankTransaction $record) => !$record->isDeclined()),
             ]);
     }
 
     public static function getPages(): array
     {
-        return [
-            // Standard Filament resource page bindings
-        ];
+        return [];
     }
 }
