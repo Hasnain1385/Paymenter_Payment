@@ -34,5 +34,15 @@ class MultiBankQRServiceProvider extends ServiceProvider
         if (file_exists(__DIR__ . '/resources/views')) {
             $this->loadViewsFrom(__DIR__ . '/resources/views', 'multibankqr');
         }
+
+        // Register Filament resources if Filament is available
+        if (class_exists(\Filament\Facades\Filament::class) && method_exists(\Filament\Facades\Filament::class, 'registerResources')) {
+            try {
+                \Filament\Facades\Filament::registerResources([
+                    \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class,
+                    \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class,
+                ]);
+            } catch (\Throwable $e) {}
+        }
     }
 }

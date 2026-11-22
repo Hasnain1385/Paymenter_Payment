@@ -8,6 +8,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankAccount;
+use Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource\Pages;
 
 if (!class_exists(\Filament\Resources\Resource::class)) {
     return;
@@ -125,7 +126,7 @@ class MultiBankAccountResource extends Resource
     public static function getPages(): array
     {
         return [
-            // Standard Filament resource page bindings
+            'index' => Pages\ManageMultiBankAccounts::route('/'),
         ];
     }
 }

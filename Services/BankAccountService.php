@@ -27,30 +27,73 @@ class BankAccountService
 
         // 1. Try resolving from database table if table exists
         try {
-            if (Schema::hasTable('multibank_accounts')) {
-                $dbAccounts = MultiBankAccount::active()->get();
-                foreach ($dbAccounts as $acc) {
-                    if ($acc->matchesCurrency($currency)) {
-                        $qr = QrCodeService::generate(
-                            $acc->qr_payload ?: $acc->account_number,
-                            $amount,
-                            $invoiceId,
-                            $acc->qr_image_url
-                        );
+            if (Schema::hasTable('multibank_accounts') && class_exists(MultiBankAccount::class)) {
+                // If flat config contains updated accounts, sync with database slots
+                for ($i = 1; $i <= 4; $i++) {
+                    $prefix = "acc{$i}_";
+                    if (isset($config[$prefix . 'enabled']) || isset($config[$prefix . 'name'])) {
+                        $enabled = !empty($config[$prefix . 'enabled']);
+                        $name = trim($config[$prefix . 'name'] ?? '');
+                        $number = trim($config[$prefix . 'number'] ?? '');
+                        $title = trim($config[$prefix . 'title'] ?? '');
 
-                        $accounts[] = [
-                            'id' => 'db_' . $acc->id,
-                            'name' => $acc->name,
-                            'badge' => $acc->badge ?: 'Active',
-                            'account_title' => $acc->account_title,
-                            'account_number' => $acc->account_number,
-                            'routing_code' => $acc->routing_code,
-                            'instructions' => $acc->instructions,
-                            'currency' => $acc->currency,
-                            'qr_src' => $qr['qr_src'],
-                            'is_image' => $qr['is_image'],
-                            'qr_payload' => $qr['payload'],
-                        ];
+                        if (!empty($name) && !empty($number)) {
+                            $existing = MultiBankAccount::where('sort_order', $i)->first();
+                            if ($existing) {
+                                $existing->update([
+                                    'name'           => htmlspecialchars(strip_tags($name), ENT_QUOTES, 'UTF-8'),
+                                    'badge'          => htmlspecialchars(strip_tags(trim($config[$prefix . 'badge'] ?? 'Direct')), ENT_QUOTES, 'UTF-8'),
+                                    'account_title'  => htmlspecialchars(strip_tags($title ?: 'Merchant'), ENT_QUOTES, 'UTF-8'),
+                                    'account_number' => htmlspecialchars(strip_tags($number), ENT_QUOTES, 'UTF-8'),
+                                    'routing_code'   => htmlspecialchars(strip_tags(trim($config[$prefix . 'routing'] ?? '')), ENT_QUOTES, 'UTF-8') ?: null,
+                                    'qr_image_url'   => trim($config[$prefix . 'qr_image'] ?? '') ?: null,
+                                    'instructions'   => htmlspecialchars(strip_tags(trim($config[$prefix . 'instructions'] ?? '')), ENT_QUOTES, 'UTF-8') ?: null,
+                                    'currency'       => strtoupper(trim($config[$prefix . 'currency'] ?? 'PKR')),
+                                    'is_active'      => $enabled,
+                                ]);
+                            } elseif ($enabled) {
+                                MultiBankAccount::create([
+                                    'name'           => htmlspecialchars(strip_tags($name), ENT_QUOTES, 'UTF-8'),
+                                    'badge'          => htmlspecialchars(strip_tags(trim($config[$prefix . 'badge'] ?? 'Direct')), ENT_QUOTES, 'UTF-8'),
+                                    'account_title'  => htmlspecialchars(strip_tags($title ?: 'Merchant'), ENT_QUOTES, 'UTF-8'),
+                                    'account_number' => htmlspecialchars(strip_tags($number), ENT_QUOTES, 'UTF-8'),
+                                    'routing_code'   => htmlspecialchars(strip_tags(trim($config[$prefix . 'routing'] ?? '')), ENT_QUOTES, 'UTF-8') ?: null,
+                                    'qr_image_url'   => trim($config[$prefix . 'qr_image'] ?? '') ?: null,
+                                    'instructions'   => htmlspecialchars(strip_tags(trim($config[$prefix . 'instructions'] ?? '')), ENT_QUOTES, 'UTF-8') ?: null,
+                                    'currency'       => strtoupper(trim($config[$prefix . 'currency'] ?? 'PKR')),
+                                    'is_active'      => true,
+                                    'sort_order'     => $i,
+                                ]);
+                            }
+                        }
+                    }
+                }
+
+                $dbAccounts = MultiBankAccount::active()->get();
+                if ($dbAccounts->count() > 0) {
+                    foreach ($dbAccounts as $acc) {
+                        if ($acc->matchesCurrency($currency)) {
+                            $qr = QrCodeService::generate(
+                                $acc->qr_payload ?: $acc->account_number,
+                                $amount,
+                                $invoiceId,
+                                $acc->qr_image_url
+                            );
+
+                            $accounts[] = [
+                                'id' => 'db_' . $acc->id,
+                                'name' => $acc->name,
+                                'badge' => $acc->badge ?: 'Active',
+                                'account_title' => $acc->account_title,
+                                'account_number' => $acc->account_number,
+                                'routing_code' => $acc->routing_code,
+                                'instructions' => $acc->instructions,
+                                'currency' => $acc->currency,
+                                'qr_src' => $qr['qr_src'],
+                                'is_image' => $qr['is_image'],
+                                'qr_payload' => $qr['payload'],
+                            ];
+                        }
                     }
                 }
             }

@@ -93,16 +93,30 @@ composer dump-autoload -o
 
 ---
 
-### ⚙️ Admin Configuration
+### ⚙️ Admin Configuration & Access
 
-#### 1. General Gateway Settings
-1. Log into your **Paymenter Admin Panel**.
-2. Go to **Extensions ➜ Gateways** ➜ find **PakBank QR & Manual Verification** ➜ click **Enable**.
-3. Fill in your details:
-   * **WhatsApp Number**: e.g. `+923001234567` (include country code for direct WhatsApp click-to-chat).
-   * **Discord Invite**: e.g. `https://discord.gg/yourserver`
-   * **Custom Notice**: Verification instructions for customers.
-4. Click **Save Settings**.
+You can manage bank accounts and verify customer payments through **three convenient methods**:
+
+#### Method 1: Native Paymenter Admin Sidebar Navigation
+When the extension is enabled, Paymenter automatically registers and displays two dedicated management resources directly in the admin sidebar menu under the **Payments** navigation group:
+* **🏦 Bank Accounts & QRs**: Add new accounts via modal popup, edit details, upload static QR images, toggle active status, and reorder.
+* **💳 Manual Bank Proofs**: View submitted proofs, inspect uploaded receipt images, and 1-click Approve or Decline transactions.
+
+#### Method 2: Gateway Configuration Form (In-Place Settings)
+1. Navigate to **Extensions ➜ Gateways ➜ PakBank QR & Manual Verification ➜ Edit**.
+2. Configure your bank accounts directly on the page:
+   * **Account 1 (Primary / Raast)**: Bank name, account number/IBAN, title, static QR URL, instructions.
+   * **Account 2 (Easypaisa Wallet)**: Name, mobile number, title, static QR URL.
+   * **Account 3 (JazzCash Wallet)**: Name, mobile number, title, static QR URL.
+   * **Account 4 (Digital Bank / Custom)**: Name, number, title, static QR URL.
+3. Configure your Support **WhatsApp number**, **Discord invite link**, and **Payment notice**.
+4. Click **Save Settings**. (Settings automatically synchronize with the database on save).
+
+#### Method 3: Dedicated Fullscreen Dashboards
+Direct browser links with dark-mode optimized interfaces:
+* **Bank Accounts Manager**: `/admin/multibankqr/accounts`
+* **Payment History & Verification**: `/admin/multibankqr/transactions`
+* **GitHub In-Place Updates & Sync**: `/admin/multibankqr/updates`
 
 ---
 

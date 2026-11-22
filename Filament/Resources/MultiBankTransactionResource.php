@@ -12,6 +12,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankTransaction;
 use Paymenter\Extensions\Gateways\MultiBankQR\Services\PaymentApprovalService;
+use Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource\Pages;
 
 if (!class_exists(\Filament\Resources\Resource::class)) {
     return;
@@ -209,6 +210,8 @@ class MultiBankTransactionResource extends Resource
 
     public static function getPages(): array
     {
-        return [];
+        return [
+            'index' => Pages\ManageMultiBankTransactions::route('/'),
+        ];
     }
 }
