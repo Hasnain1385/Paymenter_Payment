@@ -1,0 +1,38 @@
+{
+    "name": "nain/multibankqr",
+    "description": "Multi-Bank Account QR Payment Gateway for Paymenter with WhatsApp & Discord contact links, proof submission, and admin verification.",
+    "type": "paymenter-extension",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nain",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "chillerlan/php-qrcode": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Paymenter\\Extensions\\Gateways\\MultiBankQR\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Paymenter\\Extensions\\Gateways\\MultiBankQR\\MultiBankQRServiceProvider"
+            ]
+        },
+        "paymenter": {
+            "name": "MultiBank QR",
+            "type": "gateway",
+            "description": "Accept payments via multiple bank accounts, UPI, Wire, IBAN, Zelle, Wise, and mobile wallets with interactive QR codes, direct WhatsApp and Discord deal-closing contact links, and streamlined payment proof verification."
+        }
+    },
+    "require-dev": {
+        "illuminate/database": "^11.0",
+        "illuminate/support": "^11.0",
+        "illuminate/http": "^11.0"
+    }
+}
