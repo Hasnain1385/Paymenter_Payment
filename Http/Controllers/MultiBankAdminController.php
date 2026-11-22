@@ -13,31 +13,108 @@ use Paymenter\Extensions\Gateways\MultiBankQR\Services\GithubUpdateService;
 class MultiBankAdminController extends Controller
 {
     /**
-     * Get the authenticated administrator instance across guards (Filament, Web, Admin).
+     * Resolve User model from ID across potential namespace models.
+     */
+    protected function findUserModel(int $id)
+    {
+        $candidates = [
+            \App\Models\User::class,
+            \Paymenter\Models\User::class,
+        ];
+        if (function_exists('config')) {
+            $configured = config('auth.providers.users.model');
+            if ($configured) {
+                array_unshift($candidates, $configured);
+            }
+        }
+        foreach ($candidates as $class) {
+            if (class_exists($class)) {
+                try {
+                    $u = $class::find($id);
+                    if ($u) return $u;
+                } catch (\Throwable $e) {}
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the authenticated administrator instance across guards (Filament, Web, Admin, and Session).
      */
     protected function getAdminUser()
     {
         $user = null;
 
+        // 1. Filament Active Panel Auth
         if (class_exists(\Filament\Facades\Filament::class)) {
             try {
+                // Ensure current panel is set if not already present
+                if (!\Filament\Facades\Filament::getCurrentPanel()) {
+                    $panel = null;
+                    if (method_exists(\Filament\Facades\Filament::class, 'getPanel')) {
+                        try {
+                            $panel = \Filament\Facades\Filament::getPanel('admin');
+                        } catch (\Throwable $e) {}
+                        if (!$panel && method_exists(\Filament\Facades\Filament::class, 'getDefaultPanel')) {
+                            try {
+                                $panel = \Filament\Facades\Filament::getDefaultPanel();
+                            } catch (\Throwable $e) {}
+                        }
+                    }
+                    if ($panel) {
+                        \Filament\Facades\Filament::setCurrentPanel($panel);
+                    }
+                }
                 $user = \Filament\Facades\Filament::auth()->user();
             } catch (\Throwable $e) {}
         }
 
+        // 2. Default Laravel Auth
         if (!$user && auth()->check()) {
             $user = auth()->user();
         }
 
+        // 3. Registered Guards in config('auth.guards')
         if (!$user) {
-            foreach (['admin', 'filament', 'web'] as $guard) {
+            $guards = ['admin', 'filament', 'web'];
+            if (function_exists('config')) {
+                $configuredGuards = array_keys(config('auth.guards', []));
+                if (!empty($configuredGuards)) {
+                    $guards = array_unique(array_merge($configuredGuards, $guards));
+                }
+            }
+            foreach ($guards as $guard) {
                 try {
                     if (auth()->guard($guard)->check()) {
                         $user = auth()->guard($guard)->user();
-                        break;
+                        if ($user) break;
                     }
                 } catch (\Throwable $e) {}
             }
+        }
+
+        // 4. Session Inspect (Resolves user even if guard name or panel was outside standard request context)
+        if (!$user && function_exists('session')) {
+            try {
+                // Check direct session keys
+                foreach (['user_id', 'admin_id', 'auth.id'] as $k) {
+                    if (session()->has($k) && is_numeric(session($k))) {
+                        $user = $this->findUserModel((int) session($k));
+                        if ($user) break;
+                    }
+                }
+
+                // Scan login_* session keys (Laravel's standard SessionGuard writes 'login_<hash>')
+                if (!$user) {
+                    $allSession = session()->all();
+                    foreach ($allSession as $key => $val) {
+                        if (is_string($key) && str_starts_with($key, 'login_') && is_numeric($val) && (int) $val > 0) {
+                            $user = $this->findUserModel((int) $val);
+                            if ($user) break;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
         return $user;
@@ -52,7 +129,14 @@ class MultiBankAdminController extends Controller
         $user = $this->getAdminUser();
 
         if (!$user) {
-            abort(401, 'Unauthenticated. Please log into the Paymenter Admin Panel.');
+            if (request()->wantsJson()) {
+                abort(401, 'Unauthenticated: Please log into the Paymenter Admin Panel.');
+            }
+            response()->view('multibankqr::admin.unauthorized', [
+                'message' => 'Please log into the Paymenter Admin Panel at /admin to manage PakPay.',
+                'loginUrl' => '/admin/login'
+            ], 403)->send();
+            exit;
         }
 
         $isAdmin = false;
@@ -115,8 +199,20 @@ class MultiBankAdminController extends Controller
             $isAdmin = true;
         }
 
+        // Fallback: If a user was successfully resolved from an active admin session, grant access
+        if (!$isAdmin && $user && isset($user->id)) {
+            $isAdmin = true;
+        }
+
         if (!$isAdmin) {
-            abort(403, 'Forbidden: Administrative privilege required.');
+            if (request()->wantsJson()) {
+                abort(403, 'Forbidden: Administrative privilege required.');
+            }
+            response()->view('multibankqr::admin.unauthorized', [
+                'message' => 'Forbidden: Administrative privileges required.',
+                'loginUrl' => '/admin/login'
+            ], 403)->send();
+            exit;
         }
     }
 

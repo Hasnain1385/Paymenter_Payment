@@ -120,8 +120,8 @@ class MultiBankQRTest
         assert(in_array('pakpay_hub_notice', $fieldNames), "getConfig includes dedicated PakPay portal hub notice");
         assert(!in_array('acc1_name', $fieldNames), "getConfig removes old acc1 clutter field");
         assert(!in_array('acc4_currency', $fieldNames), "getConfig removes old acc4 clutter field");
-        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.2.8', "Version bumped to 1.2.8");
-        echo "✓ Gateway Setup Decluttered: 6 clean fields, no slot clutter, v1.2.8\n";
+        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.2.9', "Version bumped to 1.2.9");
+        echo "✓ Gateway Setup Decluttered: 6 clean fields, no slot clutter, v1.2.9\n";
 
         echo "\n🎉 All Pakistani & Security tests passed successfully!\n";
     }

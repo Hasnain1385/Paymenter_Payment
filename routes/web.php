@@ -4,6 +4,10 @@ use Illuminate\Support\Facades\Route;
 use Paymenter\Extensions\Gateways\MultiBankQR\Http\Controllers\MultiBankController;
 use Paymenter\Extensions\Gateways\MultiBankQR\Http\Controllers\MultiBankAdminController;
 
+if (!class_exists(\Illuminate\Support\Facades\Route::class)) {
+    return;
+}
+
 Route::middleware(['web'])->group(function () {
     // Customer Checkout View
     Route::get('/extensions/multibankqr/pay/{invoice}', [MultiBankController::class, 'showCheckout'])
@@ -77,4 +81,24 @@ Route::middleware(['web'])->group(function () {
     // Direct Admin Sidebar Route for PakPay
     Route::get('/admin/pakpay', [MultiBankAdminController::class, 'indexDashboard'])
         ->name('multibankqr.admin.pakpay.direct');
+
+    // Extension Admin Route Group (Bypasses any Filament /admin panel route interception)
+    Route::prefix('extensions/multibankqr/admin')->group(function () {
+        Route::get('/pakpay', [MultiBankAdminController::class, 'indexDashboard']);
+        Route::get('/', [MultiBankAdminController::class, 'indexDashboard']);
+        Route::get('/accounts', [MultiBankAdminController::class, 'indexAccounts']);
+        Route::get('/transactions', [MultiBankAdminController::class, 'indexTransactions']);
+        Route::get('/updates', [MultiBankAdminController::class, 'indexUpdates']);
+        Route::post('/transactions/{id}/approve', [MultiBankAdminController::class, 'approve']);
+        Route::post('/transactions/{id}/decline', [MultiBankAdminController::class, 'decline']);
+        Route::post('/transactions/{id}/flag', [MultiBankAdminController::class, 'flag']);
+        Route::post('/accounts', [MultiBankAdminController::class, 'storeAccount']);
+        Route::post('/accounts/{id}/update', [MultiBankAdminController::class, 'updateAccount']);
+        Route::post('/accounts/{id}/delete', [MultiBankAdminController::class, 'deleteAccount']);
+        Route::post('/accounts/{id}/toggle', [MultiBankAdminController::class, 'toggleAccount']);
+        Route::post('/accounts/import-config', [MultiBankAdminController::class, 'importFromConfig']);
+        Route::post('/updates/check', [MultiBankAdminController::class, 'checkUpdates']);
+        Route::post('/updates/apply', [MultiBankAdminController::class, 'applyUpdate']);
+        Route::post('/updates/push', [MultiBankAdminController::class, 'pushUpdates']);
+    });
 });

@@ -60,7 +60,7 @@ class PakPay extends Page
             'verifiedCount' => $verifiedCount,
             'verifiedTotal' => $verifiedTotal,
             'updateInfo'    => $updateInfo,
-            'version'       => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.2.8',
+            'version'       => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.2.9',
         ];
     }
 }

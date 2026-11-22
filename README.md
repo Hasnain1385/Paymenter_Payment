@@ -118,10 +118,10 @@ When the extension is loaded, a dedicated **PakPay** page appears in the Payment
 3. All bank account CRUD operations are conveniently handled in the dedicated PakPay page.
 
 #### Method 3: Direct Admin URLs
-* **Unified PakPay Hub**: `/admin/multibankqr/pakpay` (or `/admin/pakpay`)
-* **Bank Accounts Manager**: `/admin/multibankqr/accounts`
-* **Payment Verifications**: `/admin/multibankqr/transactions`
-* **GitHub In-Place Updates**: `/admin/multibankqr/updates`
+* **Unified PakPay Hub**: `/admin/multibankqr/pakpay` (or `/extensions/multibankqr/admin/pakpay`)
+* **Bank Accounts Manager**: `/admin/multibankqr/accounts` (or `/extensions/multibankqr/admin/accounts`)
+* **Payment Verifications**: `/admin/multibankqr/transactions` (or `/extensions/multibankqr/admin/transactions`)
+* **GitHub In-Place Updates**: `/admin/multibankqr/updates` (or `/extensions/multibankqr/admin/updates`)
 
 ---
 

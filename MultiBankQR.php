@@ -26,18 +26,27 @@ if (!class_exists('App\Attributes\ExtensionMeta')) {
 #[ExtensionMeta(
     name: 'PakPay - Bank Transfer & QR Gateway',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord support buttons, and instant admin verification.',
-    version: '1.2.8',
+    version: '1.2.9',
     author: 'Mirza Hasnain Baig',
     url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png'
 )]
 class MultiBankQR extends Gateway
 {
-    public const VERSION = '1.2.8';
+    public const VERSION = '1.2.9';
+
     /**
-     * Boot the extension: register routes, views, and auto-migrate tables if needed.
+     * Instantiate the gateway and ensure routes and services are immediately booted.
      */
-    public function boot()
+    public function __construct()
+    {
+        $this->boot();
+    }
+
+    /**
+     * Boot the extension: register routes, views, service provider, and auto-migrate tables if needed.
+     */
+    public function boot($extension = null)
     {
         // Load composer autoload if vendor exists inside extension folder
         if (file_exists(__DIR__ . '/vendor/autoload.php')) {
@@ -45,13 +54,26 @@ class MultiBankQR extends Gateway
         }
 
         // Register Web routes
-        if (file_exists(__DIR__ . '/routes/web.php')) {
-            require __DIR__ . '/routes/web.php';
+        if (class_exists(\Illuminate\Support\Facades\Route::class)) {
+            if (file_exists(__DIR__ . '/routes/web.php')) {
+                require_once __DIR__ . '/routes/web.php';
+            } elseif (file_exists(__DIR__ . '/routes.php')) {
+                require_once __DIR__ . '/routes.php';
+            }
         }
 
         // Register Views namespace
-        if (file_exists(__DIR__ . '/resources/views')) {
-            View::addNamespace('multibankqr', __DIR__ . '/resources/views');
+        if (file_exists(__DIR__ . '/resources/views') && class_exists(\Illuminate\Support\Facades\View::class)) {
+            try {
+                \Illuminate\Support\Facades\View::addNamespace('multibankqr', __DIR__ . '/resources/views');
+            } catch (\Throwable $e) {}
+        }
+
+        // Register ServiceProvider if not yet registered
+        if (function_exists('app') && class_exists(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQRServiceProvider::class)) {
+            try {
+                app()->register(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQRServiceProvider::class);
+            } catch (\Throwable $e) {}
         }
 
         // Auto-migrate tables if not yet created
@@ -84,8 +106,12 @@ class MultiBankQR extends Gateway
                 'type' => 'placeholder',
                 'description' => '<div style="padding:14px;background:#064e3b;border:1px solid #059669;border-radius:8px;color:#ecfdf5;font-size:13px;line-height:1.6;">' .
                     '<strong style="font-size:14px;display:block;margin-bottom:4px;">🚀 Dedicated PakPay Hub Available</strong>' .
-                    'Manage your bank accounts (add / remove), verify customer payments, and check GitHub updates directly from the dedicated <strong>PakPay</strong> page in your sidebar or at: ' .
-                    '<br><a href="/admin/multibankqr/pakpay" target="_blank" style="display:inline-block;margin-top:10px;padding:8px 16px;background:#10b981;color:#ffffff;font-weight:700;border-radius:6px;text-decoration:none;">Open PakPay Management Hub &rarr;</a>' .
+                    'Manage bank accounts (add / remove), verify incoming customer payments, and sync GitHub updates directly:' .
+                    '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">' .
+                    '<a href="/admin/multibankqr/pakpay" target="_blank" style="display:inline-block;padding:8px 16px;background:#10b981;color:#ffffff;font-weight:700;border-radius:6px;text-decoration:none;">Open PakPay Hub &rarr;</a>' .
+                    '<a href="/admin/multibankqr/accounts" target="_blank" style="display:inline-block;padding:8px 14px;background:#047857;color:#ffffff;font-weight:600;border-radius:6px;text-decoration:none;">Bank Accounts Manager &rarr;</a>' .
+                    '<a href="/extensions/multibankqr/admin/pakpay" target="_blank" style="display:inline-block;padding:8px 14px;background:#059669;color:#ffffff;font-weight:600;border-radius:6px;text-decoration:none;">Direct Link (Bypass) &rarr;</a>' .
+                    '</div>' .
                     '</div>',
             ],
             [
@@ -235,6 +261,10 @@ class MultiBankQR extends Gateway
      */
     public static function ensureTablesExist(): void
     {
+        if (!class_exists(\Illuminate\Support\Facades\Schema::class)) {
+            return;
+        }
+
         try {
             if (!Schema::hasTable('multibank_accounts') || !Schema::hasTable('multibank_transactions')) {
                 $migrationPath = realpath(__DIR__ . '/database/migrations');
@@ -288,7 +318,28 @@ class MultiBankQR extends Gateway
                 }
             }
         } catch (\Throwable $e) {
-            Log::warning('[MultiBankQR] Unable to check or run migrations: ' . $e->getMessage());
+            if (class_exists(\Illuminate\Support\Facades\Log::class)) {
+                Log::warning('[MultiBankQR] Unable to check or run migrations: ' . $e->getMessage());
+            }
         }
+    }
+}
+
+// Global auto-boot: ensure routes and services are immediately registered when Paymenter loads this file
+if (class_exists(\Illuminate\Support\Facades\Route::class)) {
+    if (file_exists(__DIR__ . '/routes/web.php')) {
+        require_once __DIR__ . '/routes/web.php';
+    } elseif (file_exists(__DIR__ . '/routes.php')) {
+        require_once __DIR__ . '/routes.php';
+    }
+    if (file_exists(__DIR__ . '/resources/views') && class_exists(\Illuminate\Support\Facades\View::class)) {
+        try {
+            \Illuminate\Support\Facades\View::addNamespace('multibankqr', __DIR__ . '/resources/views');
+        } catch (\Throwable $e) {}
+    }
+    if (function_exists('app') && class_exists(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQRServiceProvider::class)) {
+        try {
+            app()->register(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQRServiceProvider::class);
+        } catch (\Throwable $e) {}
     }
 }
