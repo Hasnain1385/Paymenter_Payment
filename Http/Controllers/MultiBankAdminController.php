@@ -13,19 +13,107 @@ use Paymenter\Extensions\Gateways\MultiBankQR\Services\GithubUpdateService;
 class MultiBankAdminController extends Controller
 {
     /**
+     * Get the authenticated administrator instance across guards (Filament, Web, Admin).
+     */
+    protected function getAdminUser()
+    {
+        $user = null;
+
+        if (class_exists(\Filament\Facades\Filament::class)) {
+            try {
+                $user = \Filament\Facades\Filament::auth()->user();
+            } catch (\Throwable $e) {}
+        }
+
+        if (!$user && auth()->check()) {
+            $user = auth()->user();
+        }
+
+        if (!$user) {
+            foreach (['admin', 'filament', 'web'] as $guard) {
+                try {
+                    if (auth()->guard($guard)->check()) {
+                        $user = auth()->guard($guard)->user();
+                        break;
+                    }
+                } catch (\Throwable $e) {}
+            }
+        }
+
+        return $user;
+    }
+
+    /**
      * Verify that the current user is an authenticated administrator.
+     * Fully compatible with Paymenter's role_id and Filament architecture.
      */
     protected function authorizeAdmin(): void
     {
-        if (!auth()->check()) {
-            abort(401, 'Unauthenticated');
+        $user = $this->getAdminUser();
+
+        if (!$user) {
+            abort(401, 'Unauthenticated. Please log into the Paymenter Admin Panel.');
         }
 
-        $user = auth()->user();
-        $isAdmin = ($user->is_admin ?? false)
-            || ($user->role === 'admin')
-            || ($user->is_staff ?? false)
-            || (method_exists($user, 'can') && $user->can('manage-invoices'));
+        $isAdmin = false;
+
+        // 1. Filament Active Admin Session
+        if (class_exists(\Filament\Facades\Filament::class)) {
+            try {
+                if (\Filament\Facades\Filament::auth()->check()) {
+                    $isAdmin = true;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // 2. Paymenter role_id (1 = Admin, or any defined admin role ID)
+        if (isset($user->role_id) && $user->role_id !== null && $user->role_id != 0) {
+            $isAdmin = true;
+        }
+
+        // 3. SuperAdmin / Owner user ID 1
+        if (isset($user->id) && ($user->id === 1 || $user->id === '1')) {
+            $isAdmin = true;
+        }
+
+        // 4. Paymenter Role relation
+        if (isset($user->role)) {
+            if (is_object($user->role)) {
+                $roleName = strtolower($user->role->name ?? '');
+                if (in_array($roleName, ['admin', 'administrator', 'staff', 'owner', 'superadmin', 'super-admin']) || ($user->role->admin ?? false)) {
+                    $isAdmin = true;
+                }
+            } elseif (is_string($user->role) && in_array(strtolower($user->role), ['admin', 'administrator', 'staff', 'owner'])) {
+                $isAdmin = true;
+            }
+        }
+
+        // 5. Filament canAccessPanel or hasAdminAccess
+        if (method_exists($user, 'hasAdminAccess')) {
+            try {
+                if ($user->hasAdminAccess()) {
+                    $isAdmin = true;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        if (method_exists($user, 'canAccessPanel')) {
+            try {
+                $panel = class_exists(\Filament\Facades\Filament::class) ? \Filament\Facades\Filament::getCurrentPanel() : null;
+                if ($panel && $user->canAccessPanel($panel)) {
+                    $isAdmin = true;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // 6. Generic admin / staff flags
+        if (!empty($user->is_admin) || !empty($user->is_staff)) {
+            $isAdmin = true;
+        }
+
+        if (method_exists($user, 'can') && ($user->can('manage-invoices') || $user->can('admin'))) {
+            $isAdmin = true;
+        }
 
         if (!$isAdmin) {
             abort(403, 'Forbidden: Administrative privilege required.');
@@ -42,7 +130,7 @@ class MultiBankAdminController extends Controller
 
         $id = (int) $id;
         $transaction = MultiBankTransaction::findOrFail($id);
-        $adminId = auth()->id();
+        $adminId = $this->getAdminUser()?->id ?? auth()->id() ?? 1;
 
         $success = PaymentApprovalService::approve($transaction, $adminId);
 
@@ -69,7 +157,7 @@ class MultiBankAdminController extends Controller
 
         $id = (int) $id;
         $transaction = MultiBankTransaction::findOrFail($id);
-        $adminId = auth()->id();
+        $adminId = $this->getAdminUser()?->id ?? auth()->id() ?? 1;
 
         $sanitizedReason = $request->reason ? htmlspecialchars(strip_tags(trim($request->reason)), ENT_QUOTES, 'UTF-8') : null;
 
@@ -98,7 +186,7 @@ class MultiBankAdminController extends Controller
 
         $id = (int) $id;
         $transaction = MultiBankTransaction::findOrFail($id);
-        $adminId = auth()->id();
+        $adminId = $this->getAdminUser()?->id ?? auth()->id() ?? 1;
 
         $sanitizedNote = htmlspecialchars(strip_tags(trim($request->note)), ENT_QUOTES, 'UTF-8');
 

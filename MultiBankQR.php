@@ -26,14 +26,14 @@ if (!class_exists('App\Attributes\ExtensionMeta')) {
 #[ExtensionMeta(
     name: 'PakBank QR & Manual Verification',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, HBL, Bank Alfalah, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord direct contact buttons, and manual admin verification workflow.',
-    version: '1.2.6',
+    version: '1.2.7',
     author: 'Mirza Hasnain Baig',
     url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png'
 )]
 class MultiBankQR extends Gateway
 {
-    public const VERSION = '1.2.6';
+    public const VERSION = '1.2.7';
     /**
      * Boot the extension: register routes, views, and auto-migrate tables if needed.
      */
