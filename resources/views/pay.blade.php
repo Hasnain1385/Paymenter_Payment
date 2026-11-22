@@ -143,6 +143,7 @@
             text-align: left;
             color: var(--mb-text);
             font-family: inherit;
+            transition: background-color 0.2s;
         }
         .mb-acc-head:hover {
             background-color: var(--mb-card-hover);
@@ -153,6 +154,11 @@
             padding: 18px;
             border-top: 1px solid var(--mb-border);
             background-color: var(--mb-card);
+            animation: mbFadeIn 0.2s ease-in-out;
+        }
+        @keyframes mbFadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .mb-acc-item.is-active .mb-acc-body {
             display: block;
@@ -285,10 +291,15 @@
         @endif
     </div>
 
-    <!-- 3. Collapsible Bank Accounts Accordion (Only 1 Active at a Time) -->
+    <!-- 3. Collapsible Bank Accounts Accordion (Toggle to Expand / Collapse) -->
     <div style="margin-bottom: 16px;">
-        <div style="font-size: 11px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase; margin-bottom: 8px; padding-left: 4px;">
-            Select Payment Method
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 4px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase;">
+                Select Payment Method
+            </div>
+            <div style="font-size: 11px; color: var(--mb-text-muted);">
+                Click account to collapse / expand
+            </div>
         </div>
 
         @if(empty($accounts) || count($accounts) === 0)
@@ -303,8 +314,8 @@
                         $isActive = ($index === 0);
                     @endphp
                     <div id="mb-item-{{ $index }}" class="mb-acc-item {{ $isActive ? 'is-active' : '' }}">
-                        <!-- Accordion Header -->
-                        <button type="button" class="mb-acc-head" onclick="mbSelectBank({{ $index }})">
+                        <!-- Accordion Header (Click to Toggle Collapse/Expand) -->
+                        <button type="button" class="mb-acc-head" id="mb-head-{{ $index }}" onclick="mbSelectBank({{ $index }})" aria-expanded="{{ $isActive ? 'true' : 'false' }}" title="Click to collapse or expand">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--mb-chip-bg); border: 1px solid var(--mb-border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #10b981; shrink: 0;">
                                     {{ $index + 1 }}
@@ -321,7 +332,7 @@
                                 </div>
                             </div>
 
-                            <svg id="mb-chevron-{{ $index }}" style="width: 16px; height: 16px; color: var(--mb-text-muted); transition: transform 0.2s; transform: {{ $isActive ? 'rotate(180deg)' : 'rotate(0deg)' }};" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg id="mb-chevron-{{ $index }}" style="width: 16px; height: 16px; color: var(--mb-text-muted); transition: transform 0.25s ease; transform: {{ $isActive ? 'rotate(180deg)' : 'rotate(0deg)' }};" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
 
                         <!-- Accordion Content (Left Details, Right QR) -->
@@ -513,22 +524,33 @@
         });
     }
 
-    // Single-Active Accordion: Clicking one expands it, collapses all others
+    // Toggle Accordion: Clicking an active account collapses it (saving vertical space).
+    // Clicking an inactive account expands it and collapses any other open account.
     function mbSelectBank(index) {
+        const targetItem = document.getElementById(`mb-item-${index}`);
+        const targetChevron = document.getElementById(`mb-chevron-${index}`);
+        const targetHead = document.getElementById(`mb-head-${index}`);
+        if (!targetItem) return;
+
+        const isCurrentlyActive = targetItem.classList.contains('is-active');
         const total = {{ count($accounts ?? []) }};
+
+        // Collapse all accounts
         for (let i = 0; i < total; i++) {
             const item = document.getElementById(`mb-item-${i}`);
             const chevron = document.getElementById(`mb-chevron-${i}`);
-            if (!item) continue;
+            const head = document.getElementById(`mb-head-${i}`);
+            if (item) item.classList.remove('is-active');
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+            if (head) head.setAttribute('aria-expanded', 'false');
+        }
 
-            if (i === index) {
-                // If already active, keep it or toggle
-                item.classList.add('is-active');
-                if (chevron) chevron.style.transform = 'rotate(180deg)';
-            } else {
-                item.classList.remove('is-active');
-                if (chevron) chevron.style.transform = 'rotate(0deg)';
-            }
+        // If it was NOT active before, expand it now.
+        // If it was already active, it remains collapsed!
+        if (!isCurrentlyActive) {
+            targetItem.classList.add('is-active');
+            if (targetChevron) targetChevron.style.transform = 'rotate(180deg)';
+            if (targetHead) targetHead.setAttribute('aria-expanded', 'true');
         }
     }
 
