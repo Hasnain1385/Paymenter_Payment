@@ -9,132 +9,342 @@
     $isDeclined = $hasTransaction && $transaction->isDeclined();
 @endphp
 
-<div class="w-full max-w-3xl mx-auto space-y-4 font-sans text-slate-800 dark:text-slate-100">
+<div class="mb-checkout-root">
+    <style>
+        /* Scoped Self-Contained Theme Variables - Bulletproof in Dark and Light Modes */
+        .mb-checkout-root {
+            --mb-bg: #ffffff;
+            --mb-card: #f8fafc;
+            --mb-card-hover: #f1f5f9;
+            --mb-border: #e2e8f0;
+            --mb-border-active: #10b981;
+            --mb-text: #0f172a;
+            --mb-text-muted: #64748b;
+            --mb-input-bg: #ffffff;
+            --mb-input-border: #cbd5e1;
+            --mb-chip-bg: #f1f5f9;
+            --mb-chip-text: #334155;
+            --mb-qr-bg: #ffffff;
+            --mb-qr-border: #e2e8f0;
+            --mb-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: var(--mb-font);
+            color: var(--mb-text);
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 4px;
+        }
 
-    <!-- 1. Invoice & Amount Due Card -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+        /* Auto-Detect Dark Mode from System or Parent Theme */
+        @media (prefers-color-scheme: dark) {
+            .mb-checkout-root {
+                --mb-bg: #0f172a;
+                --mb-card: #1e293b;
+                --mb-card-hover: #243247;
+                --mb-border: #334155;
+                --mb-border-active: #10b981;
+                --mb-text: #f8fafc;
+                --mb-text-muted: #94a3b8;
+                --mb-input-bg: #0b1120;
+                --mb-input-border: #334155;
+                --mb-chip-bg: #0b1120;
+                --mb-chip-text: #cbd5e1;
+                --mb-qr-bg: #ffffff;
+                --mb-qr-border: #475569;
+            }
+        }
+
+        /* Force Dark Mode when .dark is present anywhere on parent */
+        .dark .mb-checkout-root,
+        [data-theme="dark"] .mb-checkout-root,
+        [data-bs-theme="dark"] .mb-checkout-root {
+            --mb-bg: #0f172a;
+            --mb-card: #1e293b;
+            --mb-card-hover: #243247;
+            --mb-border: #334155;
+            --mb-border-active: #10b981;
+            --mb-text: #f8fafc;
+            --mb-text-muted: #94a3b8;
+            --mb-input-bg: #0b1120;
+            --mb-input-border: #334155;
+            --mb-chip-bg: #0b1120;
+            --mb-chip-text: #cbd5e1;
+            --mb-qr-bg: #ffffff;
+            --mb-qr-border: #475569;
+        }
+
+        /* Typography & Components */
+        .mb-box {
+            background-color: var(--mb-bg);
+            border: 1px solid var(--mb-border);
+            border-radius: 16px;
+            padding: 20px;
+            color: var(--mb-text);
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .mb-btn-wa {
+            background-color: #25D366;
+            color: #ffffff !important;
+            font-weight: 700;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 18px;
+            text-decoration: none;
+            font-size: 13px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .mb-btn-wa:hover { opacity: 0.92; }
+        .mb-btn-wa:active { transform: scale(0.98); }
+
+        .mb-btn-discord {
+            background-color: #5865F2;
+            color: #ffffff !important;
+            font-weight: 700;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 18px;
+            text-decoration: none;
+            font-size: 13px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .mb-btn-discord:hover { opacity: 0.92; }
+        .mb-btn-discord:active { transform: scale(0.98); }
+
+        /* Accordion */
+        .mb-acc-item {
+            background-color: var(--mb-bg);
+            border: 1px solid var(--mb-border);
+            border-radius: 14px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .mb-acc-item.is-active {
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+        }
+
+        .mb-acc-head {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            color: var(--mb-text);
+            font-family: inherit;
+        }
+        .mb-acc-head:hover {
+            background-color: var(--mb-card-hover);
+        }
+
+        .mb-acc-body {
+            display: none;
+            padding: 18px;
+            border-top: 1px solid var(--mb-border);
+            background-color: var(--mb-card);
+        }
+        .mb-acc-item.is-active .mb-acc-body {
+            display: block;
+        }
+
+        .mb-acc-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+        @media (min-width: 640px) {
+            .mb-acc-grid {
+                grid-template-columns: 1fr 180px;
+            }
+        }
+
+        /* Inputs */
+        .mb-input {
+            width: 100%;
+            background-color: var(--mb-input-bg);
+            border: 1px solid var(--mb-input-border);
+            color: var(--mb-text);
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .mb-input:focus {
+            border-color: #10b981;
+        }
+
+        .mb-btn-submit {
+            width: 100%;
+            background-color: #10b981;
+            color: #ffffff !important;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 12px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .mb-btn-submit:hover {
+            background-color: #059669;
+        }
+        .mb-btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        /* Copy Button */
+        .mb-copy-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background-color: var(--mb-chip-bg);
+            color: var(--mb-chip-text);
+            border: 1px solid var(--mb-border);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .mb-copy-pill:hover {
+            border-color: #10b981;
+            color: #10b981;
+        }
+    </style>
+
+    <!-- 1. Header Card: Invoice #, Status & Amount -->
+    <div class="mb-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--mb-border);">
             <div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Invoice #{{ $invoiceId }}</span>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase;">
+                        Invoice #{{ $invoiceId }}
+                    </span>
                     @if($isVerified)
-                        <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">Verified</span>
+                        <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(16, 185, 129, 0.15); color: #10b981;">Paid</span>
                     @elseif($isPendingVerif)
-                        <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400">Under Verification</span>
+                        <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(245, 158, 11, 0.15); color: #f59e0b;">Under Verification</span>
                     @else
-                        <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Pending Payment</span>
+                        <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--mb-chip-bg); color: var(--mb-text-muted);">Pending Payment</span>
                     @endif
                 </div>
-                <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
+                <div style="font-size: 18px; font-weight: 800; color: var(--mb-text);">
                     {{ $gatewayTitle ?? 'Bank Transfer & QR Pay' }}
-                </h1>
+                </div>
             </div>
 
-            <div class="sm:text-right">
-                <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Total Amount</span>
-                <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    <span class="text-sm font-bold text-slate-500 dark:text-slate-400 mr-0.5">{{ $invoiceCurrency }}</span>{{ $invoiceTotal }}
-                </span>
+            <div style="text-align: right;">
+                <div style="font-size: 11px; font-weight: 600; color: var(--mb-text-muted); text-transform: uppercase;">Amount Due</div>
+                <div style="font-size: 26px; font-weight: 900; color: var(--mb-text); letter-spacing: -0.5px;">
+                    <span style="font-size: 14px; font-weight: 700; color: var(--mb-text-muted); margin-right: 2px;">{{ $invoiceCurrency }}</span>{{ $invoiceTotal }}
+                </div>
             </div>
         </div>
 
-        <!-- 2. WhatsApp & Discord Contact Buttons Directly Below Amount -->
-        <div class="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <!-- 2. Two Contact Buttons Below the Amount -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 14px;">
             @if(!empty($whatsappPrePayUrl) || !empty($whatsappPhone))
                 <a href="{{ $whatsappPrePayUrl ?? ('https://wa.me/' . preg_replace('/[^0-9]/', '', $whatsappPhone)) }}"
-                   target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs sm:text-sm font-bold shadow-sm transition active:scale-[0.99]">
-                    <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.153.57 4.175 1.564 5.921l-1.636 5.981 6.136-1.609c1.706.929 3.659 1.457 5.736 1.457 6.627 0 12-5.373 12-12 0-6.627-5.373-12-12-12z"/></svg>
-                    <span>Contact on WhatsApp</span>
+                   target="_blank" rel="noopener noreferrer" class="mb-btn-wa">
+                    <svg style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.153.57 4.175 1.564 5.921l-1.636 5.981 6.136-1.609c1.706.929 3.659 1.457 5.736 1.457 6.627 0 12-5.373 12-12 0-6.627-5.373-12-12-12z"/></svg>
+                    <span>Chat on WhatsApp</span>
                 </a>
             @endif
 
             @if(!empty($discordInvite))
                 <a href="{{ $discordInvite }}"
-                   target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white text-xs sm:text-sm font-bold shadow-sm transition active:scale-[0.99]">
-                    <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                   target="_blank" rel="noopener noreferrer" class="mb-btn-discord">
+                    <svg style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                     <span>Join Discord</span>
                 </a>
             @endif
         </div>
+
+        @if(!empty($customNotice))
+            <div style="margin-top: 14px; padding: 10px 14px; border-radius: 10px; background-color: var(--mb-card); border: 1px solid var(--mb-border); font-size: 12px; color: var(--mb-text-muted);">
+                {{ $customNotice }}
+            </div>
+        @endif
     </div>
 
-    <!-- Notice (if specified) -->
-    @if(!empty($customNotice))
-        <div class="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
-            {{ $customNotice }}
+    <!-- 3. Collapsible Bank Accounts Accordion (Only 1 Active at a Time) -->
+    <div style="margin-bottom: 16px;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase; margin-bottom: 8px; padding-left: 4px;">
+            Select Payment Method
         </div>
-    @endif
-
-    <!-- 3. Collapsible Bank Accounts (Accordion - Only One Active at a Time) -->
-    <div class="space-y-2">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
-            Select Bank / Payment Method
-        </h2>
 
         @if(empty($accounts) || count($accounts) === 0)
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center text-slate-500">
-                <p class="text-sm font-semibold">No bank accounts currently configured.</p>
-                <p class="text-xs mt-1">Please contact support on WhatsApp or Discord for payment details.</p>
+            <div class="mb-box" style="text-align: center; color: var(--mb-text-muted); padding: 30px;">
+                <p style="font-size: 14px; font-weight: 600; margin: 0;">No active bank accounts found.</p>
+                <p style="font-size: 12px; margin-top: 4px;">Please contact support on WhatsApp or Discord.</p>
             </div>
         @else
-            <div id="bankAccordion" class="space-y-2">
+            <div id="mbAccordion">
                 @foreach($accounts as $index => $acc)
                     @php
-                        $isDefaultOpen = ($index === 0);
+                        $isActive = ($index === 0);
                     @endphp
-                    <div id="acc-item-{{ $index }}" class="bg-white dark:bg-slate-900 border {{ $isDefaultOpen ? 'border-emerald-500 dark:border-emerald-600 ring-1 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800' }} rounded-xl transition duration-200 overflow-hidden shadow-sm">
-                        <!-- Accordion Header Button -->
-                        <button type="button"
-                                onclick="toggleBankAccordion({{ $index }})"
-                                class="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                            <div class="flex items-center gap-3">
-                                <span class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
+                    <div id="mb-item-{{ $index }}" class="mb-acc-item {{ $isActive ? 'is-active' : '' }}">
+                        <!-- Accordion Header -->
+                        <button type="button" class="mb-acc-head" onclick="mbSelectBank({{ $index }})">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--mb-chip-bg); border: 1px solid var(--mb-border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #10b981; shrink: 0;">
                                     {{ $index + 1 }}
-                                </span>
+                                </div>
                                 <div>
-                                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                                    <div style="font-size: 14px; font-weight: 700; color: var(--mb-text);">
                                         {{ $acc['name'] }}
-                                    </h3>
+                                    </div>
                                     @if(!empty($acc['badge']))
-                                        <span class="inline-block text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        <div style="font-size: 11px; font-weight: 600; color: #10b981;">
                                             {{ $acc['badge'] }}
-                                        </span>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
 
-                            <!-- Accordion Chevron Arrow -->
-                            <div class="flex items-center gap-2">
-                                <svg id="chevron-{{ $index }}" class="w-4 h-4 text-slate-400 transition-transform duration-200 {{ $isDefaultOpen ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                            </div>
+                            <svg id="mb-chevron-{{ $index }}" style="width: 16px; height: 16px; color: var(--mb-text-muted); transition: transform 0.2s; transform: {{ $isActive ? 'rotate(180deg)' : 'rotate(0deg)' }};" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
 
-                        <!-- Accordion Body: Left details, Right QR -->
-                        <div id="body-{{ $index }}" class="{{ $isDefaultOpen ? 'block' : 'hidden' }} border-t border-slate-100 dark:border-slate-800/80 p-5 bg-slate-50/50 dark:bg-slate-950/40">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <!-- Accordion Content (Left Details, Right QR) -->
+                        <div id="mb-body-{{ $index }}" class="mb-acc-body">
+                            <div class="mb-acc-grid">
 
-                                <!-- LEFT COLUMN: Account Details & Copy Buttons -->
-                                <div class="space-y-3">
+                                <!-- LEFT COLUMN: Details -->
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
                                     <!-- Account Title -->
                                     <div>
-                                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Account Title</span>
-                                        <span class="text-sm font-bold text-slate-800 dark:text-slate-100 select-all">{{ $acc['account_title'] }}</span>
+                                        <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Account Title</div>
+                                        <div style="font-size: 14px; font-weight: 700; color: var(--mb-text); user-select: all;">{{ $acc['account_title'] }}</div>
                                     </div>
 
-                                    <!-- Account Number / IBAN / Raast ID with Copy Button -->
+                                    <!-- Account Number / IBAN with 1-Click Copy -->
                                     <div>
-                                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Account Number / IBAN / Raast ID</span>
-                                        <div class="mt-1 flex items-center gap-2">
-                                            <span id="acc-num-{{ $index }}" class="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 select-all">
+                                        <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Account Number / IBAN / Raast ID</div>
+                                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <span id="mb-acc-num-{{ $index }}" style="font-family: monospace; font-size: 14px; font-weight: 800; color: #10b981; background: var(--mb-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--mb-border); user-select: all;">
                                                 {{ $acc['account_number'] }}
                                             </span>
-                                            <button type="button"
-                                                    onclick="copyText('acc-num-{{ $index }}', this)"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                                                    title="Copy Account Number">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-acc-num-{{ $index }}', this)">
+                                                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                                 <span>Copy</span>
                                             </button>
                                         </div>
@@ -142,49 +352,40 @@
 
                                     @if(!empty($acc['routing_code']))
                                         <div>
-                                            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Bank / Branch</span>
-                                            <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ $acc['routing_code'] }}</span>
+                                            <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Bank / Branch</div>
+                                            <div style="font-size: 12px; font-weight: 500; color: var(--mb-text);">{{ $acc['routing_code'] }}</div>
                                         </div>
                                     @endif
 
-                                    <!-- Payment Reference / Remarks -->
+                                    <!-- Transfer Reference -->
                                     <div>
-                                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Transfer Remarks / Reference</span>
-                                        <div class="mt-1 flex items-center gap-2">
-                                            <span id="ref-num-{{ $index }}" class="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 select-all">INV-{{ $invoiceId }}</span>
-                                            <button type="button"
-                                                    onclick="copyText('ref-num-{{ $index }}', this)"
-                                                    class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
-                                                Copy
-                                            </button>
+                                        <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;">Transfer Remarks / Reference</div>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span id="mb-ref-{{ $index }}" style="font-family: monospace; font-size: 12px; font-weight: 700; color: var(--mb-text); background: var(--mb-bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--mb-border); user-select: all;">INV-{{ $invoiceId }}</span>
+                                            <button type="button" class="mb-copy-pill" onclick="mbCopy('mb-ref-{{ $index }}', this)">Copy</button>
                                         </div>
                                     </div>
 
                                     @if(!empty($acc['instructions']))
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                                        <div style="font-size: 11px; color: var(--mb-text-muted); padding: 6px 10px; border-radius: 8px; background: var(--mb-bg); border: 1px solid var(--mb-border);">
                                             {{ $acc['instructions'] }}
                                         </div>
                                     @endif
                                 </div>
 
-                                <!-- RIGHT COLUMN: Scanned Static QR Code -->
-                                <div class="flex flex-col items-center justify-center p-3 text-center">
+                                <!-- RIGHT COLUMN: Scanned QR Frame -->
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
                                     @if(!empty($acc['qr_src']))
-                                        <div class="p-2 bg-white rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group"
-                                             onclick="openQrModal('{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')"
-                                             title="Click to view full size">
-                                            <img src="{{ $acc['qr_src'] }}"
-                                                 alt="{{ $acc['name'] }} QR"
-                                                 class="w-36 h-36 object-contain rounded-lg group-hover:opacity-90 transition">
+                                        <div onclick="mbOpenQr('{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')"
+                                             style="background-color: var(--mb-qr-bg); border: 1px solid var(--mb-qr-border); border-radius: 12px; padding: 10px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                            <img src="{{ $acc['qr_src'] }}" alt="QR" style="width: 130px; height: 130px; object-fit: contain; display: block; border-radius: 6px;">
                                         </div>
-                                        <button type="button"
-                                                onclick="openQrModal('{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')"
-                                                class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 mt-2 transition">
-                                            Scan or Click to Enlarge
-                                        </button>
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--mb-text-muted); margin-top: 6px; cursor: pointer;"
+                                             onclick="mbOpenQr('{{ $acc['qr_src'] }}', '{{ addslashes($acc['name']) }}')">
+                                            Scan to Pay
+                                        </div>
                                     @else
-                                        <div class="w-36 h-36 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 text-xs p-3">
-                                            <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                                        <div style="width: 130px; height: 130px; border: 1px dashed var(--mb-border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--mb-text-muted);">
                                             <span>Manual Transfer</span>
                                         </div>
                                     @endif
@@ -198,108 +399,87 @@
         @endif
     </div>
 
-    <!-- 4. Payment Confirmation / Proof Submission Card -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+    <!-- 4. Payment Confirmation / Proof Form Card -->
+    <div class="mb-box">
         @if($isVerified)
             <!-- Verified State -->
-            <div class="text-center py-4 space-y-2">
-                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <div style="text-align: center; padding: 16px 0;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                    <svg style="width: 24px; height: 24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                 </div>
-                <h3 class="text-base font-bold text-slate-900 dark:text-white">Payment Verified</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Your transfer has been verified and this invoice is now marked as paid.</p>
-                <div class="pt-2">
-                    <a href="/invoices/{{ $invoiceId }}" class="inline-flex items-center gap-1 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition">
-                        View Invoice
-                    </a>
-                </div>
+                <div style="font-size: 16px; font-weight: 800; color: var(--mb-text);">Payment Verified</div>
+                <p style="font-size: 12px; color: var(--mb-text-muted); margin: 4px 0 14px;">Your payment has been confirmed and this invoice is paid.</p>
+                <a href="/invoices/{{ $invoiceId }}" class="mb-btn-submit" style="display: inline-block; width: auto; padding: 8px 18px; text-decoration: none; font-size: 13px;">View Invoice</a>
             </div>
         @elseif($isPendingVerif)
-            <!-- Pending Verification State -->
-            <div class="space-y-4">
-                <div class="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200">
-                    <div class="p-2 bg-amber-100 dark:bg-amber-900/60 rounded-lg shrink-0 mt-0.5">
-                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <!-- Pending Verification State with Auto-Polling -->
+            <div style="padding: 10px 0;">
+                <div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <div style="color: #f59e0b; margin-top: 2px;">
+                        <svg style="width: 20px; height: 20px; animation: spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                     </div>
-                    <div class="flex-1 text-xs">
-                        <h4 class="font-bold text-sm">Payment Details Under Verification</h4>
-                        <p class="mt-0.5">Your payment details (Transaction ID: <strong class="font-mono">{{ $transaction->transaction_id }}</strong>) have been received. We will verify and activate your order shortly.</p>
-                        <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-2">This page updates automatically upon verification.</p>
+                    <div style="font-size: 12px; color: var(--mb-text); flex: 1;">
+                        <div style="font-weight: 700; font-size: 13px; color: #f59e0b; margin-bottom: 2px;">Verification in Progress</div>
+                        <div>Your payment (TRX: <strong style="font-family: monospace;">{{ $transaction->transaction_id }}</strong>) has been submitted. Our team will verify and activate your order shortly.</div>
+                        <div style="font-size: 11px; color: var(--mb-text-muted); margin-top: 6px;">This page updates automatically once approved.</div>
                     </div>
                 </div>
 
                 @if(!empty($whatsappPostPayUrl))
-                    <div class="text-center pt-1">
-                        <a href="{{ $whatsappPostPayUrl }}" target="_blank" rel="noopener noreferrer"
-                           class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white shadow-sm transition">
-                            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.153.57 4.175 1.564 5.921l-1.636 5.981 6.136-1.609c1.706.929 3.659 1.457 5.736 1.457 6.627 0 12-5.373 12-12 0-6.627-5.373-12-12-12z"/></svg>
+                    <div style="text-align: center; margin-top: 14px;">
+                        <a href="{{ $whatsappPostPayUrl }}" target="_blank" rel="noopener noreferrer" class="mb-btn-wa" style="font-size: 12px; padding: 8px 14px;">
                             <span>Send Screenshot on WhatsApp</span>
                         </a>
                     </div>
                 @endif
             </div>
         @else
-            <!-- Initial Submission Form -->
-            <form action="{{ route('multibankqr.submit-proof', $invoiceId) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <!-- Payment Proof Submission Form -->
+            <form action="{{ route('multibankqr.submit-proof', $invoiceId) }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Confirm Payment</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Please provide your transfer details after sending payment.</p>
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 14px; font-weight: 700; color: var(--mb-text);">Confirm Payment</div>
+                    <div style="font-size: 12px; color: var(--mb-text-muted); margin-top: 2px;">Enter your transaction reference after making the transfer.</div>
                 </div>
 
                 @if($errors->any())
-                    <div class="p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-xs text-red-600 dark:text-red-400 space-y-1">
+                    <div style="padding: 10px 14px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; font-size: 12px; margin-bottom: 12px;">
                         @foreach($errors->all() as $err)
-                            <p>• {{ $err }}</p>
+                            <div>• {{ $err }}</div>
                         @endforeach
                     </div>
                 @endif
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
                     <!-- Transaction ID -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Transaction ID / Reference (TRX / UTR) *
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase; margin-bottom: 4px;">
+                            Transaction ID / Reference (TRX) *
                         </label>
-                        <input type="text"
-                               name="transaction_id"
-                               required
-                               placeholder="e.g. 1928374652"
-                               class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500">
+                        <input type="text" name="transaction_id" required placeholder="e.g. 1928374652" class="mb-input" style="font-family: monospace;">
                     </div>
 
-                    <!-- Sender Name / Title -->
+                    <!-- Sender Name / Phone -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase; margin-bottom: 4px;">
                             Sender Name or Mobile Number *
                         </label>
-                        <input type="text"
-                               name="sender_name"
-                               required
-                               placeholder="e.g. Muhammad Ali or 03001234567"
-                               class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500">
+                        <input type="text" name="sender_name" required placeholder="e.g. Ali or 03001234567" class="mb-input">
                     </div>
                 </div>
 
                 <!-- Proof Screenshot Upload -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 11px; font-weight: 700; color: var(--mb-text-muted); text-transform: uppercase; margin-bottom: 4px;">
                         Payment Screenshot / Receipt {{ $requireProofImage ? '*' : '(Optional)' }}
                     </label>
-                    <input type="file"
-                           name="proof_image"
-                           {{ $requireProofImage ? 'required' : '' }}
-                           accept="image/jpeg,image/png,image/webp,application/pdf"
-                           class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-200 dark:hover:file:bg-slate-700">
+                    <input type="file" name="proof_image" {{ $requireProofImage ? 'required' : '' }} accept="image/jpeg,image/png,image/webp,application/pdf" class="mb-input" style="padding: 6px;">
                 </div>
 
                 <!-- Submit Button -->
-                <div class="pt-2">
-                    <button type="submit"
-                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-sm transition active:scale-[0.99]">
-                        <span>Submit Payment Proof</span>
-                    </button>
-                </div>
+                <button type="submit" class="mb-btn-submit">
+                    Submit Payment Details
+                </button>
             </form>
         @endif
     </div>
@@ -307,74 +487,64 @@
 </div>
 
 <!-- Lightbox Modal for Enlargeable QR Image -->
-<div id="qrModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeQrModal()">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-            <h4 id="qrModalTitle" class="text-sm font-bold text-slate-900 dark:text-white truncate">Bank QR Code</h4>
-            <button type="button" onclick="closeQrModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold">&times;</button>
+<div id="mbQrModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center; padding: 16px;" onclick="mbCloseQr()">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 340px; width: 100%; padding: 20px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; margin-bottom: 14px;">
+            <div id="mbQrModalTitle" style="font-size: 14px; font-weight: 700; color: #0f172a;">Bank QR Code</div>
+            <button type="button" onclick="mbCloseQr()" style="background: none; border: none; font-size: 20px; line-height: 1; cursor: pointer; color: #64748b;">&times;</button>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-slate-200 inline-block shadow-inner">
-            <img id="qrModalImg" src="" alt="QR" class="w-56 h-56 object-contain rounded-lg mx-auto">
+        <div style="background: #ffffff; padding: 10px; border-radius: 10px; display: inline-block;">
+            <img id="mbQrModalImg" src="" alt="QR" style="width: 220px; height: 220px; object-fit: contain; display: block;">
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Scan this QR code from your banking or wallet app.</p>
+        <p style="font-size: 11px; color: #64748b; margin: 10px 0 0;">Scan with your mobile banking app.</p>
     </div>
 </div>
 
 <script>
-    // Copy Text to Clipboard with Visual Feedback
-    function copyText(elementId, btn) {
-        const text = document.getElementById(elementId).innerText.trim();
+    // 1-Click Copy with Feedback
+    function mbCopy(id, btn) {
+        const text = document.getElementById(id).innerText.trim();
         navigator.clipboard.writeText(text).then(() => {
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-bold">Copied!</span>`;
-            setTimeout(() => {
-                btn.innerHTML = originalHtml;
-            }, 1800);
+            const old = btn.innerHTML;
+            btn.innerHTML = `<span style="color:#10b981;font-weight:700;">Copied!</span>`;
+            setTimeout(() => { btn.innerHTML = old; }, 1800);
         }).catch(() => {
             alert('Copied: ' + text);
         });
     }
 
-    // Toggle Bank Accordion: Only ONE bank item expanded at a time
-    function toggleBankAccordion(selectedIndex) {
-        const totalItems = {{ count($accounts ?? []) }};
-        for (let i = 0; i < totalItems; i++) {
-            const body = document.getElementById(`body-${i}`);
-            const chevron = document.getElementById(`chevron-${i}`);
-            const item = document.getElementById(`acc-item-${i}`);
+    // Single-Active Accordion: Clicking one expands it, collapses all others
+    function mbSelectBank(index) {
+        const total = {{ count($accounts ?? []) }};
+        for (let i = 0; i < total; i++) {
+            const item = document.getElementById(`mb-item-${i}`);
+            const chevron = document.getElementById(`mb-chevron-${i}`);
+            if (!item) continue;
 
-            if (!body) continue;
-
-            if (i === selectedIndex) {
-                // Expand selected
-                body.classList.remove('hidden');
-                body.classList.add('block');
-                chevron.classList.add('rotate-180', 'text-emerald-600', 'dark:text-emerald-400');
-                item.classList.add('border-emerald-500', 'dark:border-emerald-600', 'ring-1', 'ring-emerald-500/20');
-                item.classList.remove('border-slate-200', 'dark:border-slate-800');
+            if (i === index) {
+                // If already active, keep it or toggle
+                item.classList.add('is-active');
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
             } else {
-                // Collapse others
-                body.classList.add('hidden');
-                body.classList.remove('block');
-                chevron.classList.remove('rotate-180', 'text-emerald-600', 'dark:text-emerald-400');
-                item.classList.remove('border-emerald-500', 'dark:border-emerald-600', 'ring-1', 'ring-emerald-500/20');
-                item.classList.add('border-slate-200', 'dark:border-slate-800');
+                item.classList.remove('is-active');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
             }
         }
     }
 
     // Lightbox QR Zoom
-    function openQrModal(src, title) {
-        document.getElementById('qrModalImg').src = src;
-        document.getElementById('qrModalTitle').innerText = title;
-        document.getElementById('qrModal').classList.remove('hidden');
+    function mbOpenQr(src, title) {
+        document.getElementById('mbQrModalImg').src = src;
+        document.getElementById('mbQrModalTitle').innerText = title;
+        const modal = document.getElementById('mbQrModal');
+        modal.style.display = 'flex';
     }
 
-    function closeQrModal() {
-        document.getElementById('qrModal').classList.add('hidden');
+    function mbCloseQr() {
+        document.getElementById('mbQrModal').style.display = 'none';
     }
 
-    // Status Polling for Pending Verification
+    // Real-Time Background Status Polling
     @if($isPendingVerif)
     const pollInterval = setInterval(async () => {
         try {
@@ -387,7 +557,7 @@
                 window.location.reload();
             }
         } catch (e) {
-            // Ignore temporary network drop
+            // Network fallback
         }
     }, 5000);
     @endif
