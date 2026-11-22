@@ -120,8 +120,8 @@ class MultiBankQRTest
         assert(!in_array('pakpay_hub_notice', $fieldNames), "getConfig removes raw HTML pakpay_hub_notice placeholder");
         assert(!in_array('acc1_name', $fieldNames), "getConfig removes old acc1 clutter field");
         assert(!in_array('acc4_currency', $fieldNames), "getConfig removes old acc4 clutter field");
-        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.3.4', "Version bumped to 1.3.4");
-        echo "✓ Gateway Setup Decluttered: 5 clean fields, zero raw HTML placeholders, v1.3.4\n";
+        assert(\Paymenter\Extensions\Gateways\MultiBankQR\MultiBankQR::VERSION === '1.3.5', "Version bumped to 1.3.5");
+        echo "✓ Gateway Setup Decluttered: 5 clean fields, zero raw HTML placeholders, v1.3.5\n";
 
         // 9. Raw QR Payload with tokens
         $rawPayload = "00020101021132480016A0000007270401145204541153035865404{amount}5802PK5914Merchant Title6006Lahore62170113INV-{invoice_id}6304";

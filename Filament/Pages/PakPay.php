@@ -88,7 +88,7 @@ class PakPay extends Page
             'declinedCount'     => $declinedCount,
             'totalTransactions' => $totalTransactions,
             'updateInfo'        => $updateInfo,
-            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.4',
+            'version'           => defined(MultiBankQR::class . '::VERSION') ? MultiBankQR::VERSION : '1.3.5',
             'tab'               => request()->query('tab', 'accounts'),
         ];
     }

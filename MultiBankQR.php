@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\Log;
 use Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankTransaction;
 use Paymenter\Extensions\Gateways\MultiBankQR\Services\BankAccountService;
 
+// Standalone PSR-4 autoloader: ensures extension classes load reliably across any Paymenter core updates
+spl_autoload_register(function ($class) {
+    $prefix = 'Paymenter\\Extensions\\Gateways\\MultiBankQR\\';
+    if (str_starts_with($class, $prefix)) {
+        $relativeClass = substr($class, strlen($prefix));
+        $file = __DIR__ . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+        if (file_exists($file)) {
+            require_once $file;
+        }
+    }
+});
+
 // Backward-compatibility alias for older Paymenter versions or standalone test mock
 if (!class_exists('App\Classes\Extension\Gateway')) {
     if (class_exists('App\Classes\Extensions\Gateway')) {
@@ -26,14 +38,14 @@ if (!class_exists('App\Attributes\ExtensionMeta')) {
 #[ExtensionMeta(
     name: 'PakPay - Bank Transfer & QR Gateway',
     description: 'Accept Pakistani bank & mobile wallet payments (Raast, Meezan, Easypaisa, JazzCash, SadaPay, NayaPay) with scanned static QR codes, WhatsApp & Discord support buttons, and instant admin verification.',
-    version: '1.3.4',
+    version: '1.3.5',
     author: 'Mirza Hasnain Baig',
     url: 'https://github.com/Hasnain1385/Paymenter_Payment',
     icon: 'https://raw.githubusercontent.com/Hasnain1385/Paymenter_Payment/main/logo.png'
 )]
 class MultiBankQR extends Gateway
 {
-    public const VERSION = '1.3.4';
+    public const VERSION = '1.3.5';
 
     /**
      * Instantiate the gateway and ensure routes and services are immediately booted.
@@ -302,6 +314,22 @@ class MultiBankQR extends Gateway
                         'sort_order'     => 3,
                     ]);
                 }
+            }
+
+            // Ensure gateway is registered and retained in Paymenter's extensions table across core updates
+            if (Schema::hasTable('extensions') && class_exists(\Illuminate\Support\Facades\DB::class)) {
+                try {
+                    $ext = \Illuminate\Support\Facades\DB::table('extensions')->where('name', 'MultiBankQR')->first();
+                    if (!$ext) {
+                        \Illuminate\Support\Facades\DB::table('extensions')->insert([
+                            'name'       => 'MultiBankQR',
+                            'type'       => 'gateway',
+                            'enabled'    => 1,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {}
             }
         } catch (\Throwable $e) {
             if (class_exists(\Illuminate\Support\Facades\Log::class)) {
