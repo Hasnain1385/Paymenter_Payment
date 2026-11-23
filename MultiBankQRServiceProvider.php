@@ -53,80 +53,111 @@ class MultiBankQRServiceProvider extends ServiceProvider
             $this->loadViewsFrom(__DIR__ . '/resources/views', 'multibankqr');
         }
 
-        // Register Filament resources & pages into Filament panels safely
+        // Register Filament navigation items into Filament panels safely (Zero 500 error risk)
         if (class_exists(\Filament\Facades\Filament::class)) {
             try {
-                $registerWithPanel = function ($panel) {
-                    if (!$panel) return;
+                $registerNav = function ($panel = null) {
+                    try {
+                        $panel = $panel ?: (\Filament\Facades\Filament::getCurrentPanel() ?? null);
+                        if (!$panel) return;
 
-                    // 1. Resources (MultiBankAccountResource, MultiBankTransactionResource)
-                    if (method_exists($panel, 'resources')) {
-                        $existing = method_exists($panel, 'getResources') ? $panel->getResources() : [];
-                        $toRegister = [];
-                        if (!in_array(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class, $existing)) {
-                            $toRegister[] = \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class;
-                        }
-                        if (!in_array(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class, $existing)) {
-                            $toRegister[] = \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class;
-                        }
-                        if (!empty($toRegister)) {
-                            $panel->resources($toRegister);
-                        }
-                    }
+                        if (method_exists($panel, 'navigationItems')) {
+                            static $registered = [];
+                            $panelId = method_exists($panel, 'getId') ? $panel->getId() : 'default';
+                            if (!empty($registered[$panelId])) return;
+                            $registered[$panelId] = true;
 
-                    // 2. Custom Pages (PakPay)
-                    if (method_exists($panel, 'pages')) {
-                        $existingPages = method_exists($panel, 'getPages') ? $panel->getPages() : [];
-                        if (!in_array(\Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class, $existingPages)) {
-                            $panel->pages([
-                                \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class,
-                            ]);
+                            $items = self::getPakPayNavigationItems();
+                            if (!empty($items)) {
+                                $panel->navigationItems($items);
+                            }
                         }
-                    }
+                    } catch (\Throwable $e) {}
                 };
 
                 // Hook: Filament::serving callback
                 if (method_exists(\Filament\Facades\Filament::class, 'serving')) {
-                    \Filament\Facades\Filament::serving(function () use ($registerWithPanel) {
-                        try {
-                            $panel = \Filament\Facades\Filament::getCurrentPanel();
-                            $registerWithPanel($panel);
-                        } catch (\Throwable $e) {}
+                    \Filament\Facades\Filament::serving(function () use ($registerNav) {
+                        $registerNav();
                     });
                 }
 
                 // Hook: ServingFilament event fallback
                 if (class_exists(\Filament\Events\ServingFilament::class)) {
-                    \Illuminate\Support\Facades\Event::listen(\Filament\Events\ServingFilament::class, function () use ($registerWithPanel) {
-                        try {
-                            $panel = \Filament\Facades\Filament::getCurrentPanel();
-                            $registerWithPanel($panel);
-                        } catch (\Throwable $e) {}
+                    \Illuminate\Support\Facades\Event::listen(\Filament\Events\ServingFilament::class, function () use ($registerNav) {
+                        $registerNav();
                     });
                 }
 
-                // Direct panel registration if panels already booted
-                if (method_exists(\Filament\Facades\Filament::class, 'getPanels')) {
-                    foreach (\Filament\Facades\Filament::getPanels() as $panel) {
-                        try {
-                            $registerWithPanel($panel);
-                        } catch (\Throwable $e) {}
+                // Filament v2 fallback
+                if (method_exists(\Filament\Facades\Filament::class, 'registerNavigationItems')) {
+                    static $v2Done = false;
+                    if (!$v2Done) {
+                        $v2Done = true;
+                        $items = self::getPakPayNavigationItems();
+                        if (!empty($items)) {
+                            \Filament\Facades\Filament::registerNavigationItems($items);
+                        }
                     }
                 }
+            } catch (\Throwable $e) {}
+        }
+    }
 
-                // Filament v2 fallback
-                if (method_exists(\Filament\Facades\Filament::class, 'registerPages')) {
-                    \Filament\Facades\Filament::registerPages([
-                        \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Pages\PakPay::class,
-                    ]);
-                }
-                if (method_exists(\Filament\Facades\Filament::class, 'registerResources')) {
-                    \Filament\Facades\Filament::registerResources([
-                        \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankAccountResource::class,
-                        \Paymenter\Extensions\Gateways\MultiBankQR\Filament\Resources\MultiBankTransactionResource::class,
-                    ]);
+    /**
+     * Build crash-proof Filament navigation items for PakPay under the 'Payments' group.
+     */
+    public static function getPakPayNavigationItems(): array
+    {
+        if (!class_exists(\Filament\Navigation\NavigationItem::class)) {
+            return [];
+        }
+
+        try {
+            $hubUrl = url('/admin/multibankqr/pakpay');
+            $accountsUrl = url('/admin/multibankqr/accounts');
+            $verifUrl = url('/admin/multibankqr/transactions');
+
+            $items = [
+                \Filament\Navigation\NavigationItem::make('PakPay')
+                    ->group('Payments')
+                    ->icon('heroicon-o-credit-card')
+                    ->sort(1)
+                    ->url($hubUrl)
+                    ->isActiveWhen(fn (): bool => request()->is('admin/multibankqr/pakpay*') || request()->is('extensions/multibankqr/admin/pakpay*') || request()->is('admin/pakpay*')),
+
+                \Filament\Navigation\NavigationItem::make('PakPay Accounts & QRs')
+                    ->group('Payments')
+                    ->icon('heroicon-o-building-library')
+                    ->sort(2)
+                    ->url($accountsUrl)
+                    ->isActiveWhen(fn (): bool => request()->is('admin/multibankqr/accounts*') || request()->is('extensions/multibankqr/admin/accounts*')),
+
+                \Filament\Navigation\NavigationItem::make('PakPay Verifications')
+                    ->group('Payments')
+                    ->icon('heroicon-o-check-badge')
+                    ->sort(3)
+                    ->url($verifUrl)
+                    ->isActiveWhen(fn (): bool => request()->is('admin/multibankqr/transactions*') || request()->is('extensions/multibankqr/admin/transactions*')),
+            ];
+
+            // Optional pending count badge (safely wrapped so it never fails)
+            try {
+                if (class_exists(\Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankTransaction::class)) {
+                    $pending = \Paymenter\Extensions\Gateways\MultiBankQR\Models\MultiBankTransaction::whereIn('status', [
+                        'pending_verification',
+                        'pending',
+                        'under_review'
+                    ])->count();
+                    if ($pending > 0 && isset($items[2])) {
+                        $items[2]->badge((string) $pending);
+                    }
                 }
             } catch (\Throwable $e) {}
+
+            return $items;
+        } catch (\Throwable $e) {
+            return [];
         }
     }
 }

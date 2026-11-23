@@ -22,21 +22,21 @@ class MultiBankTransactionResource extends Resource
 {
     protected static ?string $model = MultiBankTransaction::class;
 
-    protected static bool $shouldRegisterNavigation = true;
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return true;
+        return false;
     }
 
     public static function canAccess(): bool
     {
-        return true;
+        return false;
     }
 
     public static function canViewAny(): bool
     {
-        return true;
+        return false;
     }
 
     public static function can(string $action, ?\Illuminate\Database\Eloquent\Model $record = null): bool
